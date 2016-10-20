@@ -10,8 +10,19 @@
 #import <AVFoundation/AVFoundation.h>
 #import "XLVideoRecorder.h"
 #import <AssetsLibrary/AssetsLibrary.h>
+#import <SVProgressHUD.h>
+#import "XLVideoEidt.h"
+#import "XLTipsView.h"
 
-@interface ViewController ()
+typedef enum _XLAlertViewType
+{
+    XLAlertViewTypeError = 100,     //出错提示
+    XLAlertViewTypeCompress,        //开始压缩提示
+    XLAlertViewTypeEdit             //后续编辑提示
+
+}XLAlertViewType;
+
+@interface ViewController () <UIAlertViewDelegate>
 {
 
 }
@@ -21,6 +32,10 @@
 @property (nonatomic) NSTimer *mVideoTimer;
 @property (nonatomic) NSTimeInterval mVideoTime;
 @property (nonatomic) NSDate *mStartDate;
+
+@property (nonatomic) NSURL *mOutputUrl;
+
+@property (nonatomic) NSTimer *mCompressTimer;
 @end
 
 @implementation ViewController
@@ -40,13 +55,33 @@
 
     [XLVideoRecorder shared].finishBlock = ^(NSURL *outputUrl, NSError *error){
 
-        //完成之后保存到系统相册
-        if (error == nil)
+
+        if (weakSelf.mVideoTime < 10)
         {
-            [weakSelf saveToSystemAlbum:outputUrl];
+            [weakSelf stopTimer];
+            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
+                                                                message:@"录制视频时长小于10秒，请重新录制."
+                                                               delegate:self
+                                                      cancelButtonTitle:@"好的"
+                                                      otherButtonTitles:nil];
+            alertView.tag = XLAlertViewTypeError;
+            [alertView show];
+            return;
         }
 
         [weakSelf stopTimer];
+
+        weakSelf.mOutputUrl = outputUrl;
+        long long fileSize = [[XLVideoEidt shared] fileSizeWithUrl:outputUrl];
+
+        NSString *message = [NSString stringWithFormat:@"录制完成，视频存放于:%@，文件大小:%@, 点击继续开始压缩", [weakSelf getLastPath:[outputUrl path]], [[XLVideoEidt shared] fileSizeStrWithSize:fileSize]];
+        UIAlertView *nextAlertView = [[UIAlertView alloc] initWithTitle:nil
+                                                                message:message
+                                                               delegate:self
+                                                      cancelButtonTitle:@"取消"
+                                                      otherButtonTitles:@"继续", nil];
+        nextAlertView.tag = XLAlertViewTypeCompress;
+        [nextAlertView show];
     };
 
     //初始化界面
@@ -188,6 +223,33 @@
     });
 }
 
+- (void)startCompressTimer
+{
+    [self stopCompressTimer];
+
+    self.mCompressTimer = [NSTimer scheduledTimerWithTimeInterval:0.1
+                                                           target:self
+                                                         selector:@selector(handleCompressTimer:)
+                                                         userInfo:nil
+                                                          repeats:YES];
+}
+
+- (void)stopCompressTimer
+{
+    if (self.mCompressTimer != nil && [self.mCompressTimer isValid])
+    {
+        [self.mCompressTimer invalidate];
+        self.mCompressTimer = nil;
+    }
+}
+
+- (void)handleCompressTimer:(NSTimer *)timer
+{
+    float progress = [XLVideoEidt shared].compressProgress;
+
+    [XLTipsView setText:[NSString stringWithFormat:@"正在压缩:%.0f%%", progress * 100]];
+}
+
 - (NSString *)timeStringWithTime:(NSTimeInterval)time;
 {
     long totalTime = (long)time;
@@ -218,6 +280,102 @@
                                     }
 
                                 }];
+}
+
+- (NSString *)tmpVideoPath
+{
+    NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,
+                                                              NSUserDomainMask, YES)
+                          objectAtIndex:0];
+    return [filePath stringByAppendingPathComponent:@"tmp.mp4"];
+}
+
+#pragma mark - UIAlertViewDelegate
+- (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
+{
+    __weak ViewController *weakSelf = self;
+
+    //点击确定
+    if (buttonIndex == 1)
+    {
+        switch (alertView.tag)
+        {
+            case XLAlertViewTypeCompress:
+            {
+                //开始压缩
+                NSURL *tmpUrl = [NSURL fileURLWithPath:[self tmpVideoPath]];
+
+                //完成之后开始压缩视频
+                [XLTipsView showInView:self.view
+                           cancelBlock:^{
+
+                               [XLTipsView dismiss];
+                               [weakSelf stopCompressTimer];
+                               [[XLVideoEidt shared] cancelCompress];
+
+                               UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
+                                                                                   message:@"压缩已取消"
+                                                                                  delegate:self
+                                                                         cancelButtonTitle:@"好的"
+                                                                         otherButtonTitles:nil];
+
+                               [alertView show];
+                           }];
+
+                [XLTipsView setText:@"正在压缩..."];
+                //开始进度计时
+                [self startCompressTimer];
+
+                [[XLVideoEidt shared] compressVideo:self.mOutputUrl
+                                          outputUrl:tmpUrl
+                                      complateBlock:^(NSURL *url) {
+
+                                          //压缩完成或者取消
+                                          [XLTipsView dismiss];
+                                          //停止进度
+                                          [weakSelf stopCompressTimer];
+
+
+                                          if ([[NSFileManager defaultManager] fileExistsAtPath:[url path]])
+                                          {
+                                              dispatch_async(dispatch_get_main_queue(), ^{
+
+                                                  long long fileSize = [[XLVideoEidt shared] fileSizeWithUrl:url];
+                                                  NSString *message = [NSString stringWithFormat:@"压缩完成，文件存放于:%@, 文件大小为:%@，点击继续进行编辑处理",[weakSelf getLastPath:[url path]], [[XLVideoEidt shared] fileSizeStrWithSize:fileSize]];
+
+                                                  UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
+                                                                                                      message:message
+                                                                                                     delegate:weakSelf
+                                                                                            cancelButtonTitle:@"取消"
+                                                                                            otherButtonTitles:@"继续", nil];
+                                                  alertView.tag = XLAlertViewTypeEdit;
+                                                  [alertView show];
+
+                                              });
+                                          }
+                                      }];
+
+            }
+                break;
+            case XLAlertViewTypeEdit:
+            {
+                //开始后续编辑处理
+            }
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+- (NSString *)getLastPath:(NSString *)fullPath
+{
+    //取最后面的两个路径，以免显示过长
+    NSString *name = [fullPath lastPathComponent];
+    fullPath = [fullPath stringByDeletingLastPathComponent];
+    NSString *diretory = [fullPath lastPathComponent];
+
+    return [NSString stringWithFormat:@"/%@/%@", diretory, name];
 }
 
 @end
