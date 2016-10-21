@@ -91,15 +91,15 @@
         return;
     }
 
-//    if ([[NSFileManager defaultManager] fileExistsAtPath:[self clipPath]])
-//    {
-//        [[NSFileManager defaultManager] removeItemAtPath:[self clipPath]
-//                                                   error:nil];
-//    }
 
     AVMutableComposition *mainComposition = [[AVMutableComposition alloc] init];
     AVMutableCompositionTrack *videoTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeVideo
                                                                          preferredTrackID:kCMPersistentTrackID_Invalid];
+    //获取当前视频方向
+    NSUInteger degress = [self degressFromVideoFileWithURL:inputUrl];
+
+    videoTrack.preferredTransform = CGAffineTransformRotate(CGAffineTransformIdentity, degress * M_PI / 180.0);
+
     AVMutableCompositionTrack *audioTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeAudio
                                                                          preferredTrackID:kCMPersistentTrackID_Invalid];
 
@@ -198,13 +198,33 @@
     }];
 }
 
-//- (NSString *)clipPath
-//{
-//    NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,
-//                                                              NSUserDomainMask, YES)
-//                          objectAtIndex:0];
-//    return [filePath stringByAppendingPathComponent:@"clipTmp.mp4"];
-//}
+- (NSUInteger)degressFromVideoFileWithURL:(NSURL *)url
+{
+    NSUInteger degress = 0;
+
+    AVAsset *asset = [AVAsset assetWithURL:url];
+    NSArray *tracks = [asset tracksWithMediaType:AVMediaTypeVideo];
+    if([tracks count] > 0) {
+        AVAssetTrack *videoTrack = [tracks objectAtIndex:0];
+        CGAffineTransform t = videoTrack.preferredTransform;
+
+        if(t.a == 0 && t.b == 1.0 && t.c == -1.0 && t.d == 0){
+            // Portrait
+            degress = 90;
+        }else if(t.a == 0 && t.b == -1.0 && t.c == 1.0 && t.d == 0){
+            // PortraitUpsideDown
+            degress = 270;
+        }else if(t.a == 1.0 && t.b == 0 && t.c == 0 && t.d == 1.0){
+            // LandscapeRight
+            degress = 0;
+        }else if(t.a == -1.0 && t.b == 0 && t.c == 0 && t.d == -1.0){
+            // LandscapeLeft
+            degress = 180;
+        }
+    }
+
+    return degress;
+}
 
 #pragma mark - 工具方法
 - (long long)fileSizeWithUrl:(NSURL *)fileUrl
