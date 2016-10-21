@@ -290,6 +290,14 @@ typedef enum _XLAlertViewType
     return [filePath stringByAppendingPathComponent:@"tmp.mp4"];
 }
 
+- (NSString *)mergeVideoPath
+{
+    NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,
+                                                              NSUserDomainMask, YES)
+                          objectAtIndex:0];
+    return [filePath stringByAppendingPathComponent:@"merge.mp4"];
+}
+
 #pragma mark - UIAlertViewDelegate
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
@@ -360,6 +368,16 @@ typedef enum _XLAlertViewType
             case XLAlertViewTypeEdit:
             {
                 //开始后续编辑处理
+                NSURL *tmpUrl = [NSURL fileURLWithPath:[self tmpVideoPath]];
+                NSURL *mergeUrl = [NSURL fileURLWithPath:[self mergeVideoPath]];
+
+                [[XLVideoEidt shared] editVideo:tmpUrl
+                                      outputUrl:mergeUrl
+                                  compalteBlock:^(NSURL *outputUrl) {
+
+                                      //保存到系统相册
+                                      [weakSelf saveToSystemAlbum:outputUrl];
+                                  }];
             }
                 break;
             default:

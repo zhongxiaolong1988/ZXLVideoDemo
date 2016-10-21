@@ -40,7 +40,19 @@
  */
 - (void)cancelCompress;
 
+/**
+ 根据需求对视频进行一些编辑操作
 
+ @param inputUrl      输入的文件url
+ @param outputUrl     编辑后的输出文件url
+ @param complateBlock 编辑完成的回调
+ */
+- (void)editVideo:(NSURL *)inputUrl
+        outputUrl:(NSURL *)outputUrl
+    compalteBlock:(void(^)(NSURL *))complateBlock;
+
+
+#pragma mark - 工具方法
 /**
  获取文件大小
 
