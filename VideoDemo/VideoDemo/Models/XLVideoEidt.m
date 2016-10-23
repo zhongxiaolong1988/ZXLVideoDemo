@@ -231,85 +231,111 @@
          atSecond:(float)insertTime
      compateBlock:(void (^)(NSURL *))complateBlock
 {
-    //这句非常重要！
-    unlink([[videoUrl path] UTF8String]);
-
-    CGSize size = CGSizeMake(720, 1280);
-    NSError *error = nil;
-    AVAssetWriter *videoWriter = [[AVAssetWriter alloc] initWithURL:videoUrl
-                                                           fileType:AVFileTypeMPEG4
-                                                              error:&error];
-    if (error != nil)
+    //删除之前的文件
+    if ([[NSFileManager defaultManager] fileExistsAtPath:[self outputFilePath]
+                                             isDirectory:nil])
     {
-        NSLog(@"加载视频失败 error = %@", error);
-        return;
+        [[NSFileManager defaultManager] removeItemAtPath:[self outputFilePath]
+                                                   error:nil];
     }
 
-    NSAssert(videoWriter, @"videoWriter 初始化失败");
-    NSDictionary *videoSettings = [NSDictionary dictionaryWithObjectsAndKeys:
-                                   AVVideoCodecH264, AVVideoCodecKey,
-                                   [NSNumber numberWithInt:size.width], AVVideoWidthKey,
-                                   [NSNumber numberWithInt:size.height], AVVideoHeightKey,
-                                   nil];
-
-    AVAssetWriterInput* videoWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeVideo
-                                                                              outputSettings:videoSettings];
-
-    NSDictionary *sourcePixelBufferAttributesDictionary = [NSDictionary dictionaryWithObjectsAndKeys:
-                                                           [NSNumber numberWithInt:kCVPixelFormatType_32ARGB], kCVPixelBufferPixelFormatTypeKey, nil];
-
-
-    AVAssetWriterInputPixelBufferAdaptor *adaptor = [AVAssetWriterInputPixelBufferAdaptor
-                                                     assetWriterInputPixelBufferAdaptorWithAssetWriterInput:videoWriterInput
-                                                     sourcePixelBufferAttributes:sourcePixelBufferAttributesDictionary];
-    NSParameterAssert(videoWriterInput);
-    NSParameterAssert([videoWriter canAddInput:videoWriterInput]);
-    [videoWriter addInput:videoWriterInput];
-
-    //开始写入:
-    [videoWriter startWriting];
-    [videoWriter startSessionAtSourceTime:kCMTimeZero];
-
-    dispatch_queue_t    dispatchQueue = dispatch_queue_create("mediaInputQueue", NULL);
-    __block  int        frame = 0;
 
     //读取gif的每一帧和每一帧的持续时间
     NSData *gifData = [NSData dataWithContentsOfFile:gifPath];
     CGImageSourceRef src = CGImageSourceCreateWithData((CFDataRef)gifData, NULL);
     size_t frameCount = CGImageSourceGetCount(src);
 
-    [videoWriterInput requestMediaDataWhenReadyOnQueue:dispatchQueue usingBlock:^{
+    CGImageRef cgImage = CGImageSourceCreateImageAtIndex(src, 0, NULL);
+    float imageWidth = CGImageGetWidth(cgImage);
+    float imageHeight = CGImageGetHeight(cgImage);
 
-        while ([videoWriterInput isReadyForMoreMediaData])
-        {
-            if(++frame >= frameCount)
-            {
-                [videoWriterInput markAsFinished];
-                [videoWriter finishWritingWithCompletionHandler:^{
+    AVAsset *asset = [AVAsset assetWithURL:videoUrl];
+    AVAssetTrack *avAssetTrack = [asset tracksWithMediaType:AVMediaTypeVideo].firstObject;
 
-                    if (complateBlock)
-                    {
-                        complateBlock(videoUrl);
-                    }
+    AVMutableComposition *mainComposition = [AVMutableComposition composition];
+    AVMutableCompositionTrack *videoTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeVideo
+                                                                         preferredTrackID:kCMPersistentTrackID_Invalid];
 
-                }];
+    //获取当前视频方向
+    NSUInteger degress = [self degressFromVideoFileWithURL:videoUrl];
+
+    videoTrack.preferredTransform = CGAffineTransformRotate(CGAffineTransformIdentity, degress * M_PI / 180.0);
+
+    [videoTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, asset.duration)
+                        ofTrack:avAssetTrack
+                         atTime:kCMTimeZero
+                          error:nil];
+
+
+    AVMutableVideoComposition *videoComposition = [AVMutableVideoComposition videoCompositionWithPropertiesOfAsset:asset];
+
+    videoComposition.frameDuration = CMTimeMake(1, 30);
+    videoComposition.renderSize = CGSizeMake(videoTrack.naturalSize.height,
+                                             videoTrack.naturalSize.width);
+
+    //创建一个layer
+    CALayer *parentLayer = [CALayer layer];
+    CALayer *videoLayer = [CALayer layer];
+
+    parentLayer.frame = CGRectMake(0,
+                                   0,
+                                   videoComposition.renderSize.width,
+                                   videoComposition.renderSize.height);
+    videoLayer.frame = parentLayer.frame;
+    [parentLayer addSublayer:videoLayer];
+
+    CALayer *gifLayer = [CALayer layer];
+
+    gifLayer.frame = videoLayer.frame;
+//    gifLayer.frame = CGRectMake((videoComposition.renderSize.width - imageWidth) / 2,
+//                                (videoComposition.renderSize.height - imageHeight) / 2,
+//                                imageWidth,
+//                                imageHeight);
+    gifLayer.contents = (__bridge id)cgImage;
+    [parentLayer addSublayer:gifLayer];
+
+    videoComposition.animationTool = [AVVideoCompositionCoreAnimationTool videoCompositionCoreAnimationToolWithPostProcessingAsVideoLayer:videoLayer
+                                                                                                                                  inLayer:parentLayer];
+    AVMutableVideoCompositionInstruction *videoCompositionInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
+
+    [videoCompositionInstruction setTimeRange:CMTimeRangeMake(kCMTimeZero, asset.duration)];
+
+    AVMutableVideoCompositionLayerInstruction *layerInstruction = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:avAssetTrack];
+
+    [layerInstruction setOpacity:0 atTime:asset.duration];
+    [layerInstruction setTransform:videoTrack.preferredTransform
+                            atTime:kCMTimeZero];
+    videoCompositionInstruction.layerInstructions = @[layerInstruction];
+    videoComposition.instructions = @[videoCompositionInstruction];
+
+    //保存合成的视频
+    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mainComposition
+                                                                      presetName:AVAssetExportPresetMediumQuality];
+    exporter.videoComposition = videoComposition;
+    exporter.outputURL = [NSURL fileURLWithPath:[self outputFilePath]];
+    exporter.outputFileType = AVFileTypeMPEG4;
+    exporter.shouldOptimizeForNetworkUse = YES;
+    [exporter exportAsynchronouslyWithCompletionHandler:^{
+        switch (exporter.status) {
+            case AVAssetExportSessionStatusWaiting:
                 break;
-            }
+            case AVAssetExportSessionStatusExporting:
+                break;
+            case AVAssetExportSessionStatusCompleted:
+                NSLog(@"合成视频保存完成");
 
-            CGImageRef cgImage = CGImageSourceCreateImageAtIndex(src, frame, NULL);
+                if (complateBlock)
+                {
+                    complateBlock(exporter.outputURL);
+                }
 
-            CVPixelBufferRef buffer = (CVPixelBufferRef)[self pixelBufferFromCGImage:cgImage size:size];
-            if (buffer)
-            {
-                if(![adaptor appendPixelBuffer:buffer withPresentationTime:CMTimeMake(frame, 20)])
-                    NSLog(@"FAIL");
-                else
-                    NSLog(@"Success:%d", frame);
-                CFRelease(buffer);
-            }
+                break;
+            default:
+                NSLog(@"合成视频保存失败 %@",[exporter error]);
+                break;
         }
+        
     }];
-
 }
 
 - (CVPixelBufferRef )pixelBufferFromCGImage:(CGImageRef)image size:(CGSize)size
@@ -339,6 +365,14 @@
     CVPixelBufferUnlockBaseAddress(pxbuffer, 0);
     
     return pxbuffer;
+}
+
+- (NSString *)outputFilePath
+{
+    NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,
+                                                              NSUserDomainMask, YES)
+                          objectAtIndex:0];
+    return [filePath stringByAppendingPathComponent:@"finish.mp4"];
 }
 
 #pragma mark - 工具方法

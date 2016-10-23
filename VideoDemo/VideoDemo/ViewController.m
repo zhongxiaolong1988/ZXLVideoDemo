@@ -388,30 +388,27 @@ typedef enum _XLAlertViewType
                                       outputUrl:mergeUrl
                                   compalteBlock:^(NSURL *outputUrl) {
 
-                                      //保存到系统相册
-                                      [weakSelf saveToSystemAlbum:outputUrl];
+                                      dispatch_async(dispatch_get_main_queue(), ^{
 
-//                                      dispatch_async(dispatch_get_main_queue(), ^{
-//
-//                                          [SVProgressHUD setStatus:@"正在插入gif图片..."];
-//
-//                                          //进行下一步，插入gif图片
-//                                          NSString *gifPath = [[NSBundle mainBundle] pathForResource:@"bird" ofType:@"gif"];
-//
-//                                          [[XLVideoEidt shared] insertGif:gifPath
-//                                                                 videoUrl:outputUrl
-//                                                                 atSecond:3
-//                                                             compateBlock:^(NSURL *finishUrl) {
-//
-//                                                                 dispatch_async(dispatch_get_main_queue(), ^{
-//
-//                                                                     [SVProgressHUD setStatus:@"正在保存到系统相册..."];
-//                                                                     //保存到系统相册
-//                                                                     [weakSelf saveToSystemAlbum:finishUrl];
-//                                                                 });
-//
-//                                                             }];
-//                                      });
+                                          [SVProgressHUD setStatus:@"正在插入gif图片..."];
+
+                                          //进行下一步，插入gif图片
+                                          NSString *gifPath = [[NSBundle mainBundle] pathForResource:@"bird" ofType:@"gif"];
+
+                                          [[XLVideoEidt shared] insertGif:gifPath
+                                                                 videoUrl:outputUrl
+                                                                 atSecond:3
+                                                             compateBlock:^(NSURL *finishUrl) {
+
+                                                                 dispatch_async(dispatch_get_main_queue(), ^{
+
+                                                                     [SVProgressHUD setStatus:@"正在保存到系统相册..."];
+                                                                     //保存到系统相册
+                                                                     [weakSelf saveToSystemAlbum:finishUrl];
+                                                                 });
+
+                                                             }];
+                                      });
                                   }];
             }
                 break;
