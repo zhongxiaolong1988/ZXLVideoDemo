@@ -170,23 +170,24 @@
                           error:&error];
 
     //在第10秒的位置插入默认音乐
+    AVMutableCompositionTrack *newAudioTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
+
+
     NSString *defaultAudioPath = [[NSBundle mainBundle] pathForResource:@"bg" ofType:@"wav"];
     AVAsset *defaultAudioAsset = [AVAsset assetWithURL:[NSURL fileURLWithPath:defaultAudioPath]];
 
-    [audioTrack removeTimeRange:CMTimeRangeMake(CMTimeMakeWithSeconds(kInsertTime, asset.duration.timescale), defaultAudioAsset.duration)];
-
-    [audioTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, defaultAudioAsset.duration)
+    [newAudioTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, defaultAudioAsset.duration)
                         ofTrack:[defaultAudioAsset tracksWithMediaType:AVMediaTypeAudio].firstObject
                          atTime:CMTimeMakeWithSeconds(kInsertTime, asset.duration.timescale)
                           error:&error];
 
     //设置插入的音频和原始音频混合
-//    AVMutableAudioMix *audioMix = [[AVMutableAudioMix alloc] init];
-//    AVMutableAudioMixInputParameters *audioMixPar = [AVMutableAudioMixInputParameters audioMixInputParametersWithTrack:audioTrack];
-//    [audioMixPar setVolumeRampFromStartVolume:1
-//                                  toEndVolume:1
-//                                    timeRange:CMTimeRangeMake(CMTimeMakeWithSeconds(0, asset.duration.timescale), defaultAudioAsset.duration)];
-//    audioMix.inputParameters = @[audioMixPar];
+    AVMutableAudioMix *audioMix = [[AVMutableAudioMix alloc] init];
+    AVMutableAudioMixInputParameters *audioMixPar = [AVMutableAudioMixInputParameters audioMixInputParametersWithTrack:newAudioTrack];
+    [audioMixPar setVolumeRampFromStartVolume:1
+                                  toEndVolume:1
+                                    timeRange:CMTimeRangeMake(CMTimeMakeWithSeconds(0, asset.duration.timescale), defaultAudioAsset.duration)];
+    audioMix.inputParameters = @[audioMixPar];
 
     if (error != nil)
     {
@@ -199,7 +200,7 @@
                                                                       presetName:AVAssetExportPresetMediumQuality];
 
     exporter.outputURL = outputUrl;
-//    exporter.audioMix = audioMix;   //设置音频混合器
+    exporter.audioMix = audioMix;   //设置音频混合器
     exporter.outputFileType = AVFileTypeMPEG4;
     exporter.shouldOptimizeForNetworkUse = YES;
     [exporter exportAsynchronouslyWithCompletionHandler:^{
