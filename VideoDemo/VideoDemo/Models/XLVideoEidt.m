@@ -9,6 +9,7 @@
 #import "XLVideoEidt.h"
 #import <ImageIO/ImageIO.h>
 #import <UIKit/UIKit.h>
+#import <AVFoundation/AVFoundation.h>
 
 @interface XLVideoEidt ()
 {
@@ -239,7 +240,107 @@
                                                    error:nil];
     }
 
+    // 1 - Early exit if there's no video file selected
+    AVAsset *videoAsset = [AVAsset assetWithURL:videoUrl];
 
+    // 2 - Create AVMutableComposition object. This object will hold your AVMutableCompositionTrack instances.
+    AVMutableComposition *mixComposition = [[AVMutableComposition alloc] init];
+
+    // 3 - Video track
+    AVMutableCompositionTrack *videoTrack = [mixComposition addMutableTrackWithMediaType:AVMediaTypeVideo
+                                                                        preferredTrackID:kCMPersistentTrackID_Invalid];
+    [videoTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, videoAsset.duration)
+                        ofTrack:[[videoAsset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0]
+                         atTime:kCMTimeZero error:nil];
+
+    // 3.1 - Create AVMutableVideoCompositionInstruction
+    AVMutableVideoCompositionInstruction *mainInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
+    mainInstruction.timeRange = CMTimeRangeMake(kCMTimeZero, videoAsset.duration);
+//    mainInstruction.timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMakeWithSeconds(5, videoAsset.duration.timescale));
+
+    // 3.2 - Create an AVMutableVideoCompositionLayerInstruction for the video track and fix the orientation.
+    AVMutableVideoCompositionLayerInstruction *videolayerInstruction = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:videoTrack];
+    AVAssetTrack *videoAssetTrack = [[videoAsset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
+    UIImageOrientation videoAssetOrientation_  = UIImageOrientationUp;
+    BOOL isVideoAssetPortrait_  = NO;
+    CGAffineTransform videoTransform = videoAssetTrack.preferredTransform;
+    if (videoTransform.a == 0 && videoTransform.b == 1.0 && videoTransform.c == -1.0 && videoTransform.d == 0) {
+        videoAssetOrientation_ = UIImageOrientationRight;
+        isVideoAssetPortrait_ = YES;
+    }
+    if (videoTransform.a == 0 && videoTransform.b == -1.0 && videoTransform.c == 1.0 && videoTransform.d == 0) {
+        videoAssetOrientation_ =  UIImageOrientationLeft;
+        isVideoAssetPortrait_ = YES;
+    }
+    if (videoTransform.a == 1.0 && videoTransform.b == 0 && videoTransform.c == 0 && videoTransform.d == 1.0) {
+        videoAssetOrientation_ =  UIImageOrientationUp;
+    }
+    if (videoTransform.a == -1.0 && videoTransform.b == 0 && videoTransform.c == 0 && videoTransform.d == -1.0) {
+        videoAssetOrientation_ = UIImageOrientationDown;
+    }
+    [videolayerInstruction setTransform:videoAssetTrack.preferredTransform atTime:kCMTimeZero];
+    [videolayerInstruction setOpacity:0.0 atTime:videoAsset.duration];
+
+    // 3.3 - Add instructions
+    mainInstruction.layerInstructions = [NSArray arrayWithObjects:videolayerInstruction,nil];
+
+    AVMutableVideoComposition *mainCompositionInst = [AVMutableVideoComposition videoComposition];
+
+    CGSize naturalSize;
+    if(isVideoAssetPortrait_){
+        naturalSize = CGSizeMake(videoAssetTrack.naturalSize.height, videoAssetTrack.naturalSize.width);
+    } else {
+        naturalSize = videoAssetTrack.naturalSize;
+    }
+
+    float renderWidth, renderHeight;
+    renderWidth = naturalSize.width;
+    renderHeight = naturalSize.height;
+    mainCompositionInst.renderSize = CGSizeMake(renderWidth, renderHeight);
+    mainCompositionInst.instructions = [NSArray arrayWithObject:mainInstruction];
+    mainCompositionInst.frameDuration = CMTimeMake(1, 30);
+
+    [self applyVideoEffectsToComposition:mainCompositionInst size:naturalSize gifPath:gifPath];
+
+    // 4 - Get path
+    NSURL *url = [NSURL fileURLWithPath:[self outputFilePath]];
+
+    // 5 - Create exporter
+    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mixComposition
+                                                                      presetName:AVAssetExportPresetHighestQuality];
+    exporter.outputURL=url;
+    exporter.outputFileType = AVFileTypeQuickTimeMovie;
+    exporter.shouldOptimizeForNetworkUse = YES;
+    exporter.videoComposition = mainCompositionInst;
+    [exporter exportAsynchronouslyWithCompletionHandler:^{
+        dispatch_async(dispatch_get_main_queue(), ^{
+
+            switch (exporter.status) {
+                case AVAssetExportSessionStatusWaiting:
+                    break;
+                case AVAssetExportSessionStatusExporting:
+                    break;
+                case AVAssetExportSessionStatusCompleted:
+                    NSLog(@"合成视频保存完成");
+
+                    if (complateBlock)
+                    {
+                        complateBlock(exporter.outputURL);
+                    }
+
+                    break;
+                default:
+                    NSLog(@"合成视频保存失败 %@",[exporter error]);
+                    break;
+            }
+        });
+    }];
+}
+
+- (void)applyVideoEffectsToComposition:(AVMutableVideoComposition *)composition
+                                  size:(CGSize)size
+                               gifPath:(NSString *)gifPath
+{
     //读取gif的每一帧和每一帧的持续时间
     NSData *gifData = [NSData dataWithContentsOfFile:gifPath];
     CGImageSourceRef src = CGImageSourceCreateWithData((CFDataRef)gifData, NULL);
@@ -249,93 +350,27 @@
     float imageWidth = CGImageGetWidth(cgImage);
     float imageHeight = CGImageGetHeight(cgImage);
 
-    AVAsset *asset = [AVAsset assetWithURL:videoUrl];
-    AVAssetTrack *avAssetTrack = [asset tracksWithMediaType:AVMediaTypeVideo].firstObject;
+    // 1 - set up the overlay
+    CALayer *overlayLayer = [CALayer layer];
 
-    AVMutableComposition *mainComposition = [AVMutableComposition composition];
-    AVMutableCompositionTrack *videoTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeVideo
-                                                                         preferredTrackID:kCMPersistentTrackID_Invalid];
+    overlayLayer.backgroundColor = [UIColor clearColor].CGColor;
+    [overlayLayer setContents:(__bridge id)cgImage];
+//    overlayLayer.frame = CGRectMake(0, 0, size.width, size.height);
+    overlayLayer.frame = CGRectMake(0, 0, imageWidth / 5, imageHeight / 5);
+    [overlayLayer setMasksToBounds:YES];
 
-    //获取当前视频方向
-    NSUInteger degress = [self degressFromVideoFileWithURL:videoUrl];
-
-    videoTrack.preferredTransform = CGAffineTransformRotate(CGAffineTransformIdentity, degress * M_PI / 180.0);
-
-    [videoTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, asset.duration)
-                        ofTrack:avAssetTrack
-                         atTime:kCMTimeZero
-                          error:nil];
-
-
-    AVMutableVideoComposition *videoComposition = [AVMutableVideoComposition videoCompositionWithPropertiesOfAsset:asset];
-
-    videoComposition.frameDuration = CMTimeMake(1, 30);
-    videoComposition.renderSize = CGSizeMake(videoTrack.naturalSize.height,
-                                             videoTrack.naturalSize.width);
-
-    //创建一个layer
+    // 2 - set up the parent layer
     CALayer *parentLayer = [CALayer layer];
     CALayer *videoLayer = [CALayer layer];
-
-    parentLayer.frame = CGRectMake(0,
-                                   0,
-                                   videoComposition.renderSize.width,
-                                   videoComposition.renderSize.height);
-    videoLayer.frame = parentLayer.frame;
+    parentLayer.frame = CGRectMake(0, 0, size.width, size.height);
+    videoLayer.frame = CGRectMake(0, 0, size.width, size.height);
     [parentLayer addSublayer:videoLayer];
+    [parentLayer addSublayer:overlayLayer];
 
-    CALayer *gifLayer = [CALayer layer];
-
-    gifLayer.frame = videoLayer.frame;
-//    gifLayer.frame = CGRectMake((videoComposition.renderSize.width - imageWidth) / 2,
-//                                (videoComposition.renderSize.height - imageHeight) / 2,
-//                                imageWidth,
-//                                imageHeight);
-    gifLayer.contents = (__bridge id)cgImage;
-    [parentLayer addSublayer:gifLayer];
-
-    videoComposition.animationTool = [AVVideoCompositionCoreAnimationTool videoCompositionCoreAnimationToolWithPostProcessingAsVideoLayer:videoLayer
-                                                                                                                                  inLayer:parentLayer];
-    AVMutableVideoCompositionInstruction *videoCompositionInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
-
-    [videoCompositionInstruction setTimeRange:CMTimeRangeMake(kCMTimeZero, asset.duration)];
-
-    AVMutableVideoCompositionLayerInstruction *layerInstruction = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:avAssetTrack];
-
-    [layerInstruction setOpacity:0 atTime:asset.duration];
-    [layerInstruction setTransform:videoTrack.preferredTransform
-                            atTime:kCMTimeZero];
-    videoCompositionInstruction.layerInstructions = @[layerInstruction];
-    videoComposition.instructions = @[videoCompositionInstruction];
-
-    //保存合成的视频
-    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mainComposition
-                                                                      presetName:AVAssetExportPresetMediumQuality];
-    exporter.videoComposition = videoComposition;
-    exporter.outputURL = [NSURL fileURLWithPath:[self outputFilePath]];
-    exporter.outputFileType = AVFileTypeMPEG4;
-    exporter.shouldOptimizeForNetworkUse = YES;
-    [exporter exportAsynchronouslyWithCompletionHandler:^{
-        switch (exporter.status) {
-            case AVAssetExportSessionStatusWaiting:
-                break;
-            case AVAssetExportSessionStatusExporting:
-                break;
-            case AVAssetExportSessionStatusCompleted:
-                NSLog(@"合成视频保存完成");
-
-                if (complateBlock)
-                {
-                    complateBlock(exporter.outputURL);
-                }
-
-                break;
-            default:
-                NSLog(@"合成视频保存失败 %@",[exporter error]);
-                break;
-        }
-        
-    }];
+    // 3 - apply magic
+    composition.animationTool = [AVVideoCompositionCoreAnimationTool
+                                 videoCompositionCoreAnimationToolWithPostProcessingAsVideoLayer:videoLayer inLayer:parentLayer];
+    
 }
 
 - (CVPixelBufferRef )pixelBufferFromCGImage:(CGImageRef)image size:(CGSize)size
