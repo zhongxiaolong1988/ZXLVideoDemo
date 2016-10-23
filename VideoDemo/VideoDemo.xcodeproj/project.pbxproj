@@ -13,6 +13,8 @@
 		840D36AD1DB7A46300EBC903 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 840D36AC1DB7A46300EBC903 /* Assets.xcassets */; };
 		840D36B01DB7A46300EBC903 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 840D36AE1DB7A46300EBC903 /* LaunchScreen.storyboard */; };
 		840D36BC1DB7AFA900EBC903 /* XLVideoRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = 840D36BB1DB7AFA900EBC903 /* XLVideoRecorder.m */; };
+		84BF85EC1DBC842A00B4094F /* bg.wav in Resources */ = {isa = PBXBuildFile; fileRef = 84BF85EA1DBC842A00B4094F /* bg.wav */; };
+		84BF85ED1DBC842A00B4094F /* bird.gif in Resources */ = {isa = PBXBuildFile; fileRef = 84BF85EB1DBC842A00B4094F /* bird.gif */; };
 		84D7C0881DB8F44700548F79 /* XLVideoEidt.m in Sources */ = {isa = PBXBuildFile; fileRef = 84D7C0871DB8F44700548F79 /* XLVideoEidt.m */; };
 		84D7C08C1DB9025D00548F79 /* XLTipsView.m in Sources */ = {isa = PBXBuildFile; fileRef = 84D7C08B1DB9025D00548F79 /* XLTipsView.m */; };
 		86E6270BADDEA8D2689EF8EF /* libPods-VideoDemo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F2A5E2C5ABC8311E235E953 /* libPods-VideoDemo.a */; };
@@ -31,6 +33,8 @@
 		840D36B11DB7A46300EBC903 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		840D36BA1DB7AFA900EBC903 /* XLVideoRecorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XLVideoRecorder.h; sourceTree = "<group>"; };
 		840D36BB1DB7AFA900EBC903 /* XLVideoRecorder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XLVideoRecorder.m; sourceTree = "<group>"; };
+		84BF85EA1DBC842A00B4094F /* bg.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = bg.wav; sourceTree = "<group>"; };
+		84BF85EB1DBC842A00B4094F /* bird.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = bird.gif; sourceTree = "<group>"; };
 		84D7C0861DB8F44700548F79 /* XLVideoEidt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XLVideoEidt.h; sourceTree = "<group>"; };
 		84D7C0871DB8F44700548F79 /* XLVideoEidt.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XLVideoEidt.m; sourceTree = "<group>"; };
 		84D7C08A1DB9025D00548F79 /* XLTipsView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XLTipsView.h; sourceTree = "<group>"; };
@@ -80,6 +84,7 @@
 		840D369F1DB7A46300EBC903 /* VideoDemo */ = {
 			isa = PBXGroup;
 			children = (
+				84BF85E91DBC841B00B4094F /* Assets */,
 				840D36A31DB7A46300EBC903 /* AppDelegate.h */,
 				840D36A41DB7A46300EBC903 /* AppDelegate.m */,
 				840D36A61DB7A46300EBC903 /* ViewController.h */,
@@ -111,6 +116,15 @@
 				84D7C0871DB8F44700548F79 /* XLVideoEidt.m */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		84BF85E91DBC841B00B4094F /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+				84BF85EA1DBC842A00B4094F /* bg.wav */,
+				84BF85EB1DBC842A00B4094F /* bird.gif */,
+			);
+			path = Assets;
 			sourceTree = "<group>";
 		};
 		84D7C0891DB9022A00548F79 /* View */ = {
@@ -193,6 +207,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84BF85EC1DBC842A00B4094F /* bg.wav in Resources */,
+				84BF85ED1DBC842A00B4094F /* bird.gif in Resources */,
 				840D36B01DB7A46300EBC903 /* LaunchScreen.storyboard in Resources */,
 				840D36AD1DB7A46300EBC903 /* Assets.xcassets in Resources */,
 			);

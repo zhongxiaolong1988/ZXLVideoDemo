@@ -270,14 +270,26 @@ typedef enum _XLAlertViewType
     [library writeVideoAtPathToSavedPhotosAlbum:fileUrl
                                 completionBlock:^(NSURL *assetURL, NSError *error) {
 
-                                    if (error == nil)
-                                    {
-                                        NSLog(@"保存到系统相册完成");
-                                    }
-                                    else
-                                    {
-                                        NSLog(@"保存到系统相册出错 error = %@", error);
-                                    }
+                                    dispatch_async(dispatch_get_main_queue(), ^{
+
+                                        [SVProgressHUD dismiss];
+
+                                        if (error == nil)
+                                        {
+                                            NSLog(@"保存到系统相册完成");
+                                            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
+                                                                                                message:@"保存到系统相册完成"
+                                                                                               delegate:nil
+                                                                                      cancelButtonTitle:@"好的" otherButtonTitles:nil];
+
+                                            [alertView show];
+                                        }
+                                        else
+                                        {
+                                            NSLog(@"保存到系统相册出错 error = %@", error);
+                                        }
+
+                                    });
 
                                 }];
 }
@@ -371,12 +383,35 @@ typedef enum _XLAlertViewType
                 NSURL *tmpUrl = [NSURL fileURLWithPath:[self tmpVideoPath]];
                 NSURL *mergeUrl = [NSURL fileURLWithPath:[self mergeVideoPath]];
 
+                [SVProgressHUD showWithStatus:@"正在处理视频和音乐..."];
                 [[XLVideoEidt shared] editVideo:tmpUrl
                                       outputUrl:mergeUrl
                                   compalteBlock:^(NSURL *outputUrl) {
 
                                       //保存到系统相册
                                       [weakSelf saveToSystemAlbum:outputUrl];
+
+//                                      dispatch_async(dispatch_get_main_queue(), ^{
+//
+//                                          [SVProgressHUD setStatus:@"正在插入gif图片..."];
+//
+//                                          //进行下一步，插入gif图片
+//                                          NSString *gifPath = [[NSBundle mainBundle] pathForResource:@"bird" ofType:@"gif"];
+//
+//                                          [[XLVideoEidt shared] insertGif:gifPath
+//                                                                 videoUrl:outputUrl
+//                                                                 atSecond:3
+//                                                             compateBlock:^(NSURL *finishUrl) {
+//
+//                                                                 dispatch_async(dispatch_get_main_queue(), ^{
+//
+//                                                                     [SVProgressHUD setStatus:@"正在保存到系统相册..."];
+//                                                                     //保存到系统相册
+//                                                                     [weakSelf saveToSystemAlbum:finishUrl];
+//                                                                 });
+//
+//                                                             }];
+//                                      });
                                   }];
             }
                 break;

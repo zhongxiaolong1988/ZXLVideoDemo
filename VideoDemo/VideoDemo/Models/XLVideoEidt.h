@@ -51,6 +51,18 @@
         outputUrl:(NSURL *)outputUrl
     compalteBlock:(void(^)(NSURL *))complateBlock;
 
+/**
+ 在视频的指定位置插入gif图片
+
+ @param gifPath       gif路径
+ @param videoUrl      视频路径
+ @param insertTime    插入时间（s）
+ @param complateBlock 完成回调
+ */
+- (void)insertGif:(NSString *)gifPath
+         videoUrl:(NSURL *)videoUrl
+         atSecond:(float)insertTime
+     compateBlock:(void(^)(NSURL *))complateBlock;
 
 #pragma mark - 工具方法
 /**
