@@ -74,8 +74,8 @@ typedef enum _XLAlertViewType
         weakSelf.mOutputUrl = outputUrl;
         long long fileSize = [[XLVideoEidt shared] fileSizeWithUrl:outputUrl];
 
-        NSString *message = [NSString stringWithFormat:@"录制完成，视频存放于:%@，文件大小:%@, 点击继续开始压缩", [weakSelf getLastPath:[outputUrl path]], [[XLVideoEidt shared] fileSizeStrWithSize:fileSize]];
-        UIAlertView *nextAlertView = [[UIAlertView alloc] initWithTitle:nil
+        NSString *message = [NSString stringWithFormat:@"视频存放于:%@，文件大小:%@, 点击继续开始压缩", [weakSelf getLastPath:[outputUrl path]], [[XLVideoEidt shared] fileSizeStrWithSize:fileSize]];
+        UIAlertView *nextAlertView = [[UIAlertView alloc] initWithTitle:@"录制完成"
                                                                 message:message
                                                                delegate:self
                                                       cancelButtonTitle:@"取消"
@@ -361,9 +361,9 @@ typedef enum _XLAlertViewType
                                               dispatch_async(dispatch_get_main_queue(), ^{
 
                                                   long long fileSize = [[XLVideoEidt shared] fileSizeWithUrl:url];
-                                                  NSString *message = [NSString stringWithFormat:@"压缩完成，文件存放于:%@, 文件大小为:%@，点击继续进行编辑处理",[weakSelf getLastPath:[url path]], [[XLVideoEidt shared] fileSizeStrWithSize:fileSize]];
+                                                  NSString *message = [NSString stringWithFormat:@"文件存放于:%@, 文件大小为:%@，点击继续进行编辑处理",[weakSelf getLastPath:[url path]], [[XLVideoEidt shared] fileSizeStrWithSize:fileSize]];
 
-                                                  UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
+                                                  UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:@"压缩完成"
                                                                                                       message:message
                                                                                                      delegate:weakSelf
                                                                                             cancelButtonTitle:@"取消"

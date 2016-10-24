@@ -238,8 +238,6 @@
     //这句非常重要！
     unlink([[gifVideoUrl path] UTF8String]);
 
-    __block int frame = 0;
-
     //读取gif的每一帧和每一帧的持续时间
     NSData *gifData = [NSData dataWithContentsOfFile:gifPath];
     CGImageSourceRef src = CGImageSourceCreateWithData((CFDataRef)gifData, NULL);
@@ -265,8 +263,19 @@
         totalTime += [timeArray[i] floatValue];
     }
 
+    //创建视频帧生成器
+    AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:videoUrl options:nil];
+    AVAssetImageGenerator *gen = [[AVAssetImageGenerator alloc] initWithAsset:asset];
+
+    NSLog(@"video time = %lld, %d", asset.duration.value, asset.duration.timescale);
+    gen.requestedTimeToleranceAfter = kCMTimeZero;
+    gen.requestedTimeToleranceBefore = kCMTimeZero;
+
+    UIImage *firstFrame = [self getVideoPreViewImageAtTime:kCMTimeZero
+                                                  assetGen:gen];
+
     //输出视频高宽
-    CGSize size = CGSizeMake(272, 480);
+    CGSize size = firstFrame.size;
     NSError *error = nil;
 
     AVAssetWriter *videoWriter = [[AVAssetWriter alloc] initWithURL:gifVideoUrl
@@ -299,13 +308,6 @@
     NSParameterAssert([videoWriter canAddInput:videoWriterInput]);
     [videoWriter addInput:videoWriterInput];
 
-    AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:videoUrl options:nil];
-    AVAssetImageGenerator *gen = [[AVAssetImageGenerator alloc] initWithAsset:asset];
-
-    NSLog(@"video time = %lld, %d", asset.duration.value, asset.duration.timescale);
-    gen.requestedTimeToleranceAfter = kCMTimeZero;
-    gen.requestedTimeToleranceBefore = kCMTimeZero;
-
     //开始写入:
     [videoWriter startWriting];
     [videoWriter startSessionAtSourceTime:kCMTimeZero];
@@ -313,7 +315,6 @@
     dispatch_queue_t dispatchQueue = dispatch_queue_create("mediaInputQueue", NULL);
 
     __block float curTime = 0;
-    __block size_t videoTotalFrame = totalTime * asset.duration.timescale;
     __block float nextGifTime = [[timeArray firstObject] floatValue];
     __block int gifFrame = 0;
 
@@ -379,13 +380,13 @@
                 }
                 else
                 {
-//                    NSLog(@"Success:%d", frame);
+//                    NSLog(@"Success:%d", gifFrame);
                 }
 
                 CFRelease(buffer);
             }
 
-            curTime += (1.0 / asset.duration.timescale);
+            curTime += (1.0 / 60);
         }
     }];
 }
@@ -444,42 +445,6 @@
     UIGraphicsEndImageContext();
 
     return makedImage;
-}
-
-- (void)applyVideoEffectsToComposition:(AVMutableVideoComposition *)composition
-                                  size:(CGSize)size
-                               gifPath:(NSString *)gifPath
-{
-    //读取gif的每一帧和每一帧的持续时间
-    NSData *gifData = [NSData dataWithContentsOfFile:gifPath];
-    CGImageSourceRef src = CGImageSourceCreateWithData((CFDataRef)gifData, NULL);
-    size_t frameCount = CGImageSourceGetCount(src);
-
-    CGImageRef cgImage = CGImageSourceCreateImageAtIndex(src, 0, NULL);
-    float imageWidth = CGImageGetWidth(cgImage);
-    float imageHeight = CGImageGetHeight(cgImage);
-
-    // 1 - set up the overlay
-    CALayer *overlayLayer = [CALayer layer];
-
-    overlayLayer.backgroundColor = [UIColor clearColor].CGColor;
-    [overlayLayer setContents:(__bridge id)cgImage];
-//    overlayLayer.frame = CGRectMake(0, 0, size.width, size.height);
-    overlayLayer.frame = CGRectMake(0, 0, imageWidth / 5, imageHeight / 5);
-    [overlayLayer setMasksToBounds:YES];
-
-    // 2 - set up the parent layer
-    CALayer *parentLayer = [CALayer layer];
-    CALayer *videoLayer = [CALayer layer];
-    parentLayer.frame = CGRectMake(0, 0, size.width, size.height);
-    videoLayer.frame = CGRectMake(0, 0, size.width, size.height);
-    [parentLayer addSublayer:videoLayer];
-    [parentLayer addSublayer:overlayLayer];
-
-    // 3 - apply magic
-    composition.animationTool = [AVVideoCompositionCoreAnimationTool
-                                 videoCompositionCoreAnimationToolWithPostProcessingAsVideoLayer:videoLayer inLayer:parentLayer];
-    
 }
 
 - (CVPixelBufferRef )pixelBufferFromCGImage:(CGImageRef)image size:(CGSize)size
