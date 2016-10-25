@@ -113,7 +113,7 @@
     NSUInteger gifDegress = [self degressFromVideoFileWithURL:gifVideoUrl];
     NSLog(@"gifDegress = %lu", (unsigned long)gifDegress);
 
-    videoTrack.preferredTransform = CGAffineTransformRotate(CGAffineTransformIdentity, degress * M_PI / 180.0);
+//    videoTrack.preferredTransform = CGAffineTransformRotate(CGAffineTransformIdentity, degress * M_PI / 180.0);
 
     AVMutableCompositionTrack *audioTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeAudio
                                                                          preferredTrackID:kCMPersistentTrackID_Invalid];
@@ -245,6 +245,28 @@
         return;
     }
 
+    //视频方向问题
+    AVMutableVideoCompositionInstruction *mainInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
+
+    // 3.2 - Create an AVMutableVideoCompositionLayerInstruction for the video track and fix the orientation.
+    AVMutableVideoCompositionLayerInstruction *videolayerInstruction = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:videoTrack];
+    AVAssetTrack *videoAssetTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
+
+    [videolayerInstruction setTransform:videoAssetTrack.preferredTransform atTime:kCMTimeZero];
+    [videolayerInstruction setOpacity:0.0 atTime:asset.duration];
+
+    // 3.3 - Add instructions
+    mainInstruction.layerInstructions = [NSArray arrayWithObjects:videolayerInstruction,nil];
+    mainInstruction.timeRange = CMTimeRangeMake(kCMTimeZero,
+                                                mainComposition.duration);
+
+    AVMutableVideoComposition *mainCompositionInst = [AVMutableVideoComposition videoComposition];
+
+    mainCompositionInst.renderScale = 1.0;
+    mainCompositionInst.renderSize = CGSizeMake(videoTrack.naturalSize.height, videoTrack.naturalSize.width);
+    mainCompositionInst.instructions = [NSArray arrayWithObject:mainInstruction];
+    mainCompositionInst.frameDuration = CMTimeMake(1, 30);
+
     //保存合成的视频
     AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mainComposition
                                                                       presetName:AVAssetExportPresetMediumQuality];
@@ -252,6 +274,7 @@
     exporter.outputURL = outputUrl;
     exporter.audioMix = audioMix;   //设置音频混合器
     exporter.outputFileType = AVFileTypeMPEG4;
+    exporter.videoComposition = mainCompositionInst;
     exporter.shouldOptimizeForNetworkUse = YES;
     [exporter exportAsynchronouslyWithCompletionHandler:^{
         switch (exporter.status) {
