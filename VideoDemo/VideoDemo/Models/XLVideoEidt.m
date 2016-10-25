@@ -248,27 +248,30 @@
     //视频方向问题
     AVMutableVideoCompositionInstruction *mainInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
 
-    // 3.2 - Create an AVMutableVideoCompositionLayerInstruction for the video track and fix the orientation.
+    CMTime totalTime = CMTimeMakeWithSeconds((float)asset.duration.value / (float)asset.duration.timescale + 30,
+                                             asset.duration.timescale);
+
+    //三段视频需要有三段方向
     AVAssetTrack *videoAssetTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
 
     AVMutableVideoCompositionLayerInstruction *firstLayerIns = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:videoTrack];
     [firstLayerIns setTransform:videoAssetTrack.preferredTransform
                                  atTime:CMTimeMakeWithSeconds(0, mainComposition.duration.timescale)];
-    [firstLayerIns setOpacity:0.0 atTime:asset.duration];
+    [firstLayerIns setOpacity:0.0 atTime:totalTime];
 
     AVMutableVideoCompositionLayerInstruction *videolayerInstruction = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:videoTrack];
 
     [videolayerInstruction setTransform:CGAffineTransformIdentity
                                  atTime:CMTimeMakeWithSeconds(3, mainComposition.duration.timescale)];
-    [videolayerInstruction setOpacity:0.0 atTime:asset.duration];
+    [videolayerInstruction setOpacity:0.0 atTime:totalTime];
 
     AVMutableVideoCompositionLayerInstruction *endLayIns = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:videoTrack];
     [endLayIns setTransform:videoAssetTrack.preferredTransform
                      atTime:CMTimeMakeWithSeconds(3 + ((float)asset.duration.value) / (float)asset.duration.timescale,
                                                   mainComposition.duration.timescale)];
-    [endLayIns setOpacity:0.0 atTime:asset.duration];
+    [endLayIns setOpacity:0.0 atTime:totalTime];
 
-    // 3.3 - Add instructions
+
     mainInstruction.layerInstructions = [NSArray arrayWithObjects:firstLayerIns, videolayerInstruction, endLayIns, nil];
     mainInstruction.timeRange = CMTimeRangeMake(kCMTimeZero,
                                                 mainComposition.duration);
