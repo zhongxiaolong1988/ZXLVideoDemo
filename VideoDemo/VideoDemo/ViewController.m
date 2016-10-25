@@ -277,12 +277,12 @@ typedef enum _XLAlertViewType
                                         if (error == nil)
                                         {
                                             NSLog(@"保存到系统相册完成");
-                                            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
-                                                                                                message:@"保存到系统相册完成"
-                                                                                               delegate:nil
-                                                                                      cancelButtonTitle:@"好的" otherButtonTitles:nil];
-
-                                            [alertView show];
+//                                            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
+//                                                                                                message:@"保存到系统相册完成"
+//                                                                                               delegate:nil
+//                                                                                      cancelButtonTitle:@"好的" otherButtonTitles:nil];
+//
+//                                            [alertView show];
                                         }
                                         else
                                         {
@@ -379,26 +379,28 @@ typedef enum _XLAlertViewType
                 break;
             case XLAlertViewTypeEdit:
             {
-                //开始后续编辑处理
+                [SVProgressHUD showWithStatus:@"正在插入gif图片..."];
+
                 NSURL *tmpUrl = [NSURL fileURLWithPath:[self tmpVideoPath]];
-                NSURL *mergeUrl = [NSURL fileURLWithPath:[self mergeVideoPath]];
 
-                [SVProgressHUD showWithStatus:@"正在处理视频和音乐..."];
-                [[XLVideoEidt shared] editVideo:tmpUrl
-                                      outputUrl:mergeUrl
-                                  compalteBlock:^(NSURL *outputUrl) {
+                //先插入gif图片
+                NSString *gifPath = [[NSBundle mainBundle] pathForResource:@"bird" ofType:@"gif"];
 
-                                      dispatch_async(dispatch_get_main_queue(), ^{
+                [[XLVideoEidt shared] insertGif:gifPath
+                                       videoUrl:tmpUrl
+                                       atSecond:3
+                                   compateBlock:^(NSURL *gifVideoUrl) {
 
-                                          [SVProgressHUD setStatus:@"正在插入gif图片..."];
+                                       dispatch_async(dispatch_get_main_queue(), ^{
 
-                                          //进行下一步，插入gif图片
-                                          NSString *gifPath = [[NSBundle mainBundle] pathForResource:@"bird" ofType:@"gif"];
+                                           //再处理视频剪切合成和混入音频
+                                           NSURL *mergeUrl = [NSURL fileURLWithPath:[self mergeVideoPath]];
 
-                                          [[XLVideoEidt shared] insertGif:gifPath
-                                                                 videoUrl:outputUrl
-                                                                 atSecond:3
-                                                             compateBlock:^(NSURL *finishUrl) {
+                                           [SVProgressHUD setStatus:@"正在处理视频和音乐..."];
+                                           [[XLVideoEidt shared] editVideo:tmpUrl
+                                                               gifVideoUrl:gifVideoUrl
+                                                                 outputUrl:mergeUrl
+                                                             compalteBlock:^(NSURL *finishUrl) {
 
                                                                  dispatch_async(dispatch_get_main_queue(), ^{
 
@@ -406,10 +408,13 @@ typedef enum _XLAlertViewType
                                                                      //保存到系统相册
                                                                      [weakSelf saveToSystemAlbum:finishUrl];
                                                                  });
-
                                                              }];
-                                      });
-                                  }];
+
+                                       });
+
+                                   }];
+
+
             }
                 break;
             default:

@@ -44,10 +44,12 @@
  根据需求对视频进行一些编辑操作
 
  @param inputUrl      输入的文件url
+ @parma gifVideoUrl   输入的gif视频文件
  @param outputUrl     编辑后的输出文件url
  @param complateBlock 编辑完成的回调
  */
 - (void)editVideo:(NSURL *)inputUrl
+      gifVideoUrl:(NSURL *)gifVideoUrl
         outputUrl:(NSURL *)outputUrl
     compalteBlock:(void(^)(NSURL *))complateBlock;
 
@@ -82,4 +84,13 @@
  @return 文件大小显示字符串
  */
 - (NSString *)fileSizeStrWithSize:(long long)fileSize;
+
+/**
+ 获取gif图片的总时长
+
+ @param gifPath gif图片路径
+
+ @return 总持续时长
+ */
+- (float)getGifTotalTimeWithPath:(NSString *)gifPath;
 @end

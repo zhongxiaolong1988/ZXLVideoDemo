@@ -80,6 +80,7 @@
 }
 
 - (void)editVideo:(NSURL *)inputUrl
+      gifVideoUrl:(NSURL *)gifVideoUrl
         outputUrl:(NSURL *)outputUrl
     compalteBlock:(void (^)(NSURL *))complateBlock
 {
@@ -96,6 +97,11 @@
         return;
     }
 
+    if (![[NSFileManager defaultManager] fileExistsAtPath:[gifVideoUrl path]])
+    {
+        NSLog(@"输入的gif视频不存在");
+        return;
+    }
 
     AVMutableComposition *mainComposition = [[AVMutableComposition alloc] init];
     AVMutableCompositionTrack *videoTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeVideo
@@ -117,6 +123,7 @@
         NSLog(@"视频长度小于10秒，无法截取");
         return;
     }
+
     //2.从视频中随机截取10秒的片段
     //获取起始时间
     float startTime = arc4random() % ((long)videoSeconds - 10);
@@ -128,9 +135,14 @@
 
     NSError *error = nil;
 
-    //将原始视频到起始时间的位置插入合成的视频中
+    //获取gif视频时间
+    AVAsset *gifAsset = [AVAsset assetWithURL:gifVideoUrl];
+
+    NSLog(@"gif视频时长为 %lld, %d", gifAsset.duration.value, gifAsset.duration.timescale);
+
+    //将原始视频到gif起始时间的位置插入合成的视频中
     CMTimeRange startRange = CMTimeRangeMake(CMTimeMakeWithSeconds(0, asset.duration.timescale),
-                                             CMTimeMakeWithSeconds(kInsertTime, asset.duration.timescale));
+                                             CMTimeMakeWithSeconds(3, asset.duration.timescale));
     [videoTrack insertTimeRange:startRange
                         ofTrack:[asset tracksWithMediaType:AVMediaTypeVideo].firstObject
                          atTime:duration
@@ -138,7 +150,38 @@
     [audioTrack insertTimeRange:startRange
                         ofTrack:[asset tracksWithMediaType:AVMediaTypeAudio].firstObject
                          atTime:duration
-                          error:nil];
+                          error:&error];
+
+    //将合成的gif视频和原始视频的音频插入合成视频中
+    CMTimeRange gifRange = CMTimeRangeMake(CMTimeMakeWithSeconds(0, asset.duration.timescale),
+                                           gifAsset.duration);
+
+    [videoTrack insertTimeRange:gifRange
+                        ofTrack:[gifAsset tracksWithMediaType:AVMediaTypeVideo].firstObject
+                         atTime:CMTimeMakeWithSeconds(3, asset.duration.timescale)
+                          error:&error];
+
+    [audioTrack insertTimeRange:CMTimeRangeMake(CMTimeMakeWithSeconds(3, asset.duration.timescale),
+                                                gifAsset.duration)
+                        ofTrack:[asset tracksWithMediaType:AVMediaTypeAudio].firstObject
+                         atTime:CMTimeMakeWithSeconds(3, asset.duration.timescale)
+                          error:&error];
+
+    //插入从gif合成视频结束到第10秒的视频
+    float gifEndSecond = 3 + (float)gifAsset.duration.value / (float)gifAsset.duration.timescale;
+    CMTime gifEndTime = CMTimeMakeWithSeconds(gifEndSecond, asset.duration.timescale);
+
+    CMTimeRange afterGifRange = CMTimeRangeMake(gifEndTime,
+                                                CMTimeMakeWithSeconds(kInsertTime - gifEndSecond, asset.duration.timescale));
+
+    [videoTrack insertTimeRange:afterGifRange
+                        ofTrack:[asset tracksWithMediaType:AVMediaTypeVideo].firstObject
+                         atTime:gifEndTime
+                          error:&error];
+    [audioTrack insertTimeRange:afterGifRange
+                        ofTrack:[asset tracksWithMediaType:AVMediaTypeAudio].firstObject
+                         atTime:gifEndTime
+                          error:&error];
 
     //将截取的10秒片段循环插入3次
     for (int i = 0; i < 3; i++)
@@ -281,6 +324,7 @@
     AVAssetWriter *videoWriter = [[AVAssetWriter alloc] initWithURL:gifVideoUrl
                                                            fileType:AVFileTypeMPEG4
                                                               error:&error];
+
     if (error != nil)
     {
         NSLog(@"加载视频失败 error = %@", error);
@@ -314,15 +358,15 @@
 
     dispatch_queue_t dispatchQueue = dispatch_queue_create("mediaInputQueue", NULL);
 
-    __block float curTime = 0;
-    __block float nextGifTime = [[timeArray firstObject] floatValue];
+    __block float curTime = insertTime; //起始位置
+    __block float nextGifTime = insertTime + [[timeArray firstObject] floatValue];
     __block int gifFrame = 0;
 
     [videoWriterInput requestMediaDataWhenReadyOnQueue:dispatchQueue usingBlock:^{
 
         while ([videoWriterInput isReadyForMoreMediaData])
         {
-            if(curTime >= totalTime)
+            if(curTime >= totalTime + insertTime)
             {
                 [videoWriterInput markAsFinished];
                 [videoWriter finishWritingWithCompletionHandler:^{
@@ -373,7 +417,7 @@
             if (buffer)
             {
 //                NSLog(@"curTime = %f", curTime);
-                if(![adaptor appendPixelBuffer:buffer withPresentationTime:CMTimeMakeWithSeconds(curTime,
+                if(![adaptor appendPixelBuffer:buffer withPresentationTime:CMTimeMakeWithSeconds(curTime - insertTime,
                                                                                                  asset.duration.timescale)])
                 {
                     NSLog(@"FAIL");
@@ -485,6 +529,34 @@
 }
 
 #pragma mark - 工具方法
+- (float)getGifTotalTimeWithPath:(NSString *)gifPath
+{
+    //读取gif的每一帧和每一帧的持续时间
+    NSData *gifData = [NSData dataWithContentsOfFile:gifPath];
+    CGImageSourceRef src = CGImageSourceCreateWithData((CFDataRef)gifData, NULL);
+    size_t frameCount = CGImageSourceGetCount(src);
+
+    NSDictionary *gifProperty = [NSDictionary dictionaryWithObject:@{@0:(NSString *)kCGImagePropertyGIFLoopCount}
+                                                            forKey:(NSString *)kCGImagePropertyGIFDictionary];
+    //取每张图片的图片属性,是一个字典
+    NSDictionary *dict = CFBridgingRelease(CGImageSourceCopyPropertiesAtIndex(src, 0, (CFDictionaryRef)gifProperty));
+
+    //每帧的时间数组
+    NSMutableArray *timeArray = [NSMutableArray new];
+    float totalTime = 0;
+
+    for (int i = 0; i < frameCount; i++)
+    {
+        //添加每一帧时间
+        NSDictionary *tmp = [dict valueForKey:(NSString *)kCGImagePropertyGIFDictionary];
+        [timeArray addObject:[tmp valueForKey:(NSString *)kCGImagePropertyGIFDelayTime]];
+
+        totalTime += [timeArray[i] floatValue];
+    }
+
+    return totalTime;
+}
+
 - (NSUInteger)degressFromVideoFileWithURL:(NSURL *)url
 {
     NSUInteger degress = 0;
