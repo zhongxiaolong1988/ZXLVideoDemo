@@ -151,6 +151,14 @@
     if (![self.mSession isRunning])
     {
         [self.mSession startRunning];
+
+        [self.mSession beginConfiguration];
+        AVCaptureConnection *connection = [self.mFileOutput connectionWithMediaType:AVMediaTypeVideo];
+
+        [self.mFileOutput setRecordsVideoOrientationAndMirroringChanges:YES
+                                           asMetadataTrackForConnection:connection];
+        [connection setVideoOrientation:AVCaptureVideoOrientationPortrait];
+        [self.mSession commitConfiguration];
     }
 }
 

@@ -54,6 +54,17 @@
     compalteBlock:(void(^)(NSURL *))complateBlock;
 
 /**
+ 旋转视频
+
+ @param inputUrl      输入视频路径
+ @param angle         旋转角度
+ @param complateBlock 完成回调
+ */
+- (void)rotateVideo:(NSURL *)inputUrl
+              angle:(CGFloat)angle
+      compalteBlock:(void(^)(NSURL *))complateBlock;
+
+/**
  在视频的指定位置插入gif图片
 
  @param gifPath       gif路径

@@ -109,6 +109,10 @@
     //获取当前视频方向
     NSUInteger degress = [self degressFromVideoFileWithURL:inputUrl];
 
+    NSLog(@"degress = %lu", (unsigned long)degress);
+    NSUInteger gifDegress = [self degressFromVideoFileWithURL:gifVideoUrl];
+    NSLog(@"gifDegress = %lu", (unsigned long)gifDegress);
+
     videoTrack.preferredTransform = CGAffineTransformRotate(CGAffineTransformIdentity, degress * M_PI / 180.0);
 
     AVMutableCompositionTrack *audioTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeAudio
@@ -261,6 +265,66 @@
                 if (complateBlock)
                 {
                     complateBlock(outputUrl);
+                }
+
+                break;
+            default:
+                NSLog(@"合成视频保存失败 %@",[exporter error]);
+                break;
+        }
+    }];
+}
+
+- (void)rotateVideo:(NSURL *)inputUrl angle:(CGFloat)angle compalteBlock:(void (^)(NSURL *))complateBlock
+{
+    //1.检查文件等初始化操作
+    if ([[NSFileManager defaultManager] fileExistsAtPath:[self rotateVideoFilePath]])
+    {
+        [[NSFileManager defaultManager] removeItemAtPath:[self rotateVideoFilePath]
+                                                   error:nil];
+    }
+
+    if (![[NSFileManager defaultManager] fileExistsAtPath:[inputUrl path]])
+    {
+        NSLog(@"输入视频不存在");
+        return;
+    }
+
+    AVMutableComposition *mainComposition = [[AVMutableComposition alloc] init];
+    AVMutableCompositionTrack *videoTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeVideo
+                                                                         preferredTrackID:kCMPersistentTrackID_Invalid];
+    //获取当前视频方向
+//    NSUInteger degress = [self degressFromVideoFileWithURL:inputUrl];
+
+    videoTrack.preferredTransform = CGAffineTransformRotate(CGAffineTransformIdentity, angle * M_PI / 180.0);
+
+
+    AVAsset *asset = [AVAsset assetWithURL:inputUrl];
+
+    [videoTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, asset.duration)
+                        ofTrack:[asset tracksWithMediaType:AVMediaTypeVideo].firstObject
+                         atTime:kCMTimeZero
+                          error:nil];
+
+    //保存合成的视频
+    AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mainComposition
+                                                                      presetName:AVAssetExportPresetMediumQuality];
+
+    exporter.outputURL = [NSURL fileURLWithPath:[self rotateVideoFilePath]];
+    exporter.outputFileType = AVFileTypeMPEG4;
+    exporter.shouldOptimizeForNetworkUse = YES;
+    [exporter exportAsynchronouslyWithCompletionHandler:^{
+        switch (exporter.status) {
+            case AVAssetExportSessionStatusWaiting:
+                break;
+            case AVAssetExportSessionStatusExporting:
+                break;
+            case AVAssetExportSessionStatusCompleted:
+                NSLog(@"合成视频保存完成");
+
+                if (complateBlock)
+                {
+                    complateBlock(exporter.outputURL);
                 }
 
                 break;
@@ -526,6 +590,14 @@
                                                               NSUserDomainMask, YES)
                           objectAtIndex:0];
     return [filePath stringByAppendingPathComponent:@"gif.mp4"];
+}
+
+- (NSString *)rotateVideoFilePath
+{
+    NSString *filePath = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,
+                                                              NSUserDomainMask, YES)
+                          objectAtIndex:0];
+    return [filePath stringByAppendingPathComponent:@"rotate.mp4"];
 }
 
 #pragma mark - 工具方法

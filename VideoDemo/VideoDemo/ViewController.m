@@ -409,6 +409,15 @@ typedef enum _XLAlertViewType
                                                                      [weakSelf saveToSystemAlbum:finishUrl];
                                                                  });
                                                              }];
+//
+//                                           [[XLVideoEidt shared] rotateVideo:gifVideoUrl
+//                                                                       angle:-90
+//                                                               compalteBlock:^(NSURL *newGifVideoUrl) {
+//
+//                                                                   [weakSelf saveToSystemAlbum:newGifVideoUrl];
+//
+//                                                               }];
+
 
                                        });
 
