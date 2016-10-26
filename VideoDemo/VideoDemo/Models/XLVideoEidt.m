@@ -198,20 +198,6 @@
         return;
     }
 
-    //视频方向问题
-    AVMutableVideoCompositionInstruction *mainInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
-
-    CMTime totalTime = CMTimeMakeWithSeconds((float)asset.duration.value / (float)asset.duration.timescale + 30,
-                                             asset.duration.timescale);
-
-    //直接用一段视频
-    AVAssetTrack *videoAssetTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
-
-    AVMutableVideoCompositionLayerInstruction *firstLayerIns = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:videoTrack];
-    [firstLayerIns setTransform:videoAssetTrack.preferredTransform
-                                 atTime:CMTimeMakeWithSeconds(0, mainComposition.duration.timescale)];
-    [firstLayerIns setOpacity:0.0 atTime:totalTime];
-
     //添加一个layer显示gif
     //读取gif的每一帧和每一帧的持续时间
     NSData *gifData = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"bird"
@@ -245,7 +231,6 @@
     }
 
     CALayer *overlayLayer = [CALayer layer];
-
 
     CGRect newGifFrame = CGRectMake(0, 0, width, height);
 
@@ -281,8 +266,8 @@
     //动画信息基本设置
     [animation setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionDefault]];
     [animation setDuration:gifTotalTime];
-    [animation setRepeatCount:1000];
-    animation.beginTime = AVCoreAnimationBeginTimeAtZero;
+    [animation setRepeatCount:1];
+    animation.beginTime = 3;
 
     [overlayLayer addAnimation:animation forKey:@"gif"];
 
@@ -295,6 +280,20 @@
     parentLayer.frame = CGRectMake(0, 0, videoTrack.naturalSize.height, videoTrack.naturalSize.width);
     [parentLayer addSublayer:videoLayer];
     [parentLayer addSublayer:overlayLayer];
+
+    //视频方向问题
+    AVMutableVideoCompositionInstruction *mainInstruction = [AVMutableVideoCompositionInstruction videoCompositionInstruction];
+
+    CMTime totalTime = CMTimeMakeWithSeconds((float)asset.duration.value / (float)asset.duration.timescale + 30,
+                                             asset.duration.timescale);
+
+    //直接用一段视频
+    AVAssetTrack *videoAssetTrack = [[asset tracksWithMediaType:AVMediaTypeVideo] objectAtIndex:0];
+
+    AVMutableVideoCompositionLayerInstruction *firstLayerIns = [AVMutableVideoCompositionLayerInstruction videoCompositionLayerInstructionWithAssetTrack:videoTrack];
+    [firstLayerIns setTransform:videoAssetTrack.preferredTransform
+                         atTime:CMTimeMakeWithSeconds(0, mainComposition.duration.timescale)];
+    [firstLayerIns setOpacity:0.0 atTime:totalTime];
 
     mainInstruction.layerInstructions = [NSArray arrayWithObjects:firstLayerIns, nil];
     mainInstruction.timeRange = CMTimeRangeMake(kCMTimeZero,
