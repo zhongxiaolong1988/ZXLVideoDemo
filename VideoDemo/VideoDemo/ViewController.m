@@ -277,12 +277,12 @@ typedef enum _XLAlertViewType
                                         if (error == nil)
                                         {
                                             NSLog(@"保存到系统相册完成");
-//                                            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
-//                                                                                                message:@"保存到系统相册完成"
-//                                                                                               delegate:nil
-//                                                                                      cancelButtonTitle:@"好的" otherButtonTitles:nil];
-//
-//                                            [alertView show];
+                                            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
+                                                                                                message:@"视频已保存到系统相册完成"
+                                                                                               delegate:nil
+                                                                                      cancelButtonTitle:@"好的" otherButtonTitles:nil];
+
+                                            [alertView show];
                                         }
                                         else
                                         {
@@ -379,50 +379,24 @@ typedef enum _XLAlertViewType
                 break;
             case XLAlertViewTypeEdit:
             {
-                [SVProgressHUD showWithStatus:@"正在插入gif图片..."];
+                [SVProgressHUD showWithStatus:@"正在处理视频..."];
 
                 NSURL *tmpUrl = [NSURL fileURLWithPath:[self tmpVideoPath]];
 
-                //先插入gif图片
-                NSString *gifPath = [[NSBundle mainBundle] pathForResource:@"bird" ofType:@"gif"];
+                NSURL *mergeUrl = [NSURL fileURLWithPath:[self mergeVideoPath]];
 
-                [[XLVideoEidt shared] insertGif:gifPath
-                                       videoUrl:tmpUrl
-                                       atSecond:3
-                                   compateBlock:^(NSURL *gifVideoUrl) {
+                [[XLVideoEidt shared] editVideo:tmpUrl
+                                    gifVideoUrl:nil
+                                      outputUrl:mergeUrl
+                                  compalteBlock:^(NSURL *finishUrl) {
 
-                                       dispatch_async(dispatch_get_main_queue(), ^{
+                                      dispatch_async(dispatch_get_main_queue(), ^{
 
-                                           //再处理视频剪切合成和混入音频
-                                           NSURL *mergeUrl = [NSURL fileURLWithPath:[self mergeVideoPath]];
-
-                                           [SVProgressHUD setStatus:@"正在处理视频和音乐..."];
-                                           [[XLVideoEidt shared] editVideo:tmpUrl
-                                                               gifVideoUrl:gifVideoUrl
-                                                                 outputUrl:mergeUrl
-                                                             compalteBlock:^(NSURL *finishUrl) {
-
-                                                                 dispatch_async(dispatch_get_main_queue(), ^{
-
-                                                                     [SVProgressHUD setStatus:@"正在保存到系统相册..."];
-                                                                     //保存到系统相册
-                                                                     [weakSelf saveToSystemAlbum:finishUrl];
-                                                                 });
-                                                             }];
-//
-//                                           [[XLVideoEidt shared] rotateVideo:gifVideoUrl
-//                                                                       angle:-90
-//                                                               compalteBlock:^(NSURL *newGifVideoUrl) {
-//
-//                                                                   [weakSelf saveToSystemAlbum:newGifVideoUrl];
-//
-//                                                               }];
-
-
-                                       });
-
-                                   }];
-
+                                          [SVProgressHUD setStatus:@"正在保存到系统相册..."];
+                                          //保存到系统相册
+                                          [weakSelf saveToSystemAlbum:finishUrl];
+                                      });
+                                  }];
 
             }
                 break;
