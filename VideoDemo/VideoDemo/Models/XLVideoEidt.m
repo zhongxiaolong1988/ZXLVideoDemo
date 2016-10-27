@@ -264,7 +264,7 @@
     [animation setValues:imageArr];
 
     //动画信息基本设置
-    [animation setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionDefault]];
+    [animation setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear]];
     [animation setDuration:gifTotalTime];
     [animation setRepeatCount:1];
     animation.beginTime = 3;
