@@ -6,7 +6,7 @@
 //  Copyright © 2016年 zhongxiaolong. All rights reserved.
 //
 
-#import "ViewController.h"
+#import "VideoVC.h"
 #import <AVFoundation/AVFoundation.h>
 #import "XLVideoRecorder.h"
 #import <AssetsLibrary/AssetsLibrary.h>
@@ -22,7 +22,7 @@ typedef enum _XLAlertViewType
 
 }XLAlertViewType;
 
-@interface ViewController () <UIAlertViewDelegate>
+@interface VideoVC () <UIAlertViewDelegate>
 {
 
 }
@@ -38,14 +38,14 @@ typedef enum _XLAlertViewType
 @property (nonatomic) NSTimer *mCompressTimer;
 @end
 
-@implementation ViewController
+@implementation VideoVC
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
 
     //初始化视频录制器
-    __weak ViewController *weakSelf = self;
+    __weak VideoVC *weakSelf = self;
 
     [XLVideoRecorder shared].didStartBlock = ^(){
 
@@ -313,7 +313,7 @@ typedef enum _XLAlertViewType
 #pragma mark - UIAlertViewDelegate
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex
 {
-    __weak ViewController *weakSelf = self;
+    __weak VideoVC *weakSelf = self;
 
     //点击确定
     if (buttonIndex == 1)

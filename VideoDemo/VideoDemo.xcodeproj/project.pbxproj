@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		840D36A21DB7A46300EBC903 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 840D36A11DB7A46300EBC903 /* main.m */; };
 		840D36A51DB7A46300EBC903 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 840D36A41DB7A46300EBC903 /* AppDelegate.m */; };
-		840D36A81DB7A46300EBC903 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 840D36A71DB7A46300EBC903 /* ViewController.m */; };
 		840D36AD1DB7A46300EBC903 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 840D36AC1DB7A46300EBC903 /* Assets.xcassets */; };
 		840D36B01DB7A46300EBC903 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 840D36AE1DB7A46300EBC903 /* LaunchScreen.storyboard */; };
 		840D36BC1DB7AFA900EBC903 /* XLVideoRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = 840D36BB1DB7AFA900EBC903 /* XLVideoRecorder.m */; };
@@ -17,6 +16,10 @@
 		84BF85ED1DBC842A00B4094F /* bird.gif in Resources */ = {isa = PBXBuildFile; fileRef = 84BF85EB1DBC842A00B4094F /* bird.gif */; };
 		84D7C0881DB8F44700548F79 /* XLVideoEidt.m in Sources */ = {isa = PBXBuildFile; fileRef = 84D7C0871DB8F44700548F79 /* XLVideoEidt.m */; };
 		84D7C08C1DB9025D00548F79 /* XLTipsView.m in Sources */ = {isa = PBXBuildFile; fileRef = 84D7C08B1DB9025D00548F79 /* XLTipsView.m */; };
+		84F57E2A200C4E2C006A25B8 /* VideoVC.m in Sources */ = {isa = PBXBuildFile; fileRef = 84F57E23200C4E2B006A25B8 /* VideoVC.m */; };
+		84F57E2B200C4E2C006A25B8 /* StartPageVC.xib in Resources */ = {isa = PBXBuildFile; fileRef = 84F57E24200C4E2B006A25B8 /* StartPageVC.xib */; };
+		84F57E2C200C4E2C006A25B8 /* StartPageVC.m in Sources */ = {isa = PBXBuildFile; fileRef = 84F57E26200C4E2B006A25B8 /* StartPageVC.m */; };
+		84F57E2D200C4E2C006A25B8 /* ImageVC.m in Sources */ = {isa = PBXBuildFile; fileRef = 84F57E28200C4E2C006A25B8 /* ImageVC.m */; };
 		86E6270BADDEA8D2689EF8EF /* libPods-VideoDemo.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F2A5E2C5ABC8311E235E953 /* libPods-VideoDemo.a */; };
 /* End PBXBuildFile section */
 
@@ -26,8 +29,6 @@
 		840D36A11DB7A46300EBC903 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		840D36A31DB7A46300EBC903 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		840D36A41DB7A46300EBC903 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
-		840D36A61DB7A46300EBC903 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
-		840D36A71DB7A46300EBC903 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
 		840D36AC1DB7A46300EBC903 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		840D36AF1DB7A46300EBC903 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		840D36B11DB7A46300EBC903 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -39,6 +40,13 @@
 		84D7C0871DB8F44700548F79 /* XLVideoEidt.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XLVideoEidt.m; sourceTree = "<group>"; };
 		84D7C08A1DB9025D00548F79 /* XLTipsView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = XLTipsView.h; sourceTree = "<group>"; };
 		84D7C08B1DB9025D00548F79 /* XLTipsView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = XLTipsView.m; sourceTree = "<group>"; };
+		84F57E23200C4E2B006A25B8 /* VideoVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VideoVC.m; sourceTree = "<group>"; };
+		84F57E24200C4E2B006A25B8 /* StartPageVC.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = StartPageVC.xib; sourceTree = "<group>"; };
+		84F57E25200C4E2B006A25B8 /* ImageVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ImageVC.h; sourceTree = "<group>"; };
+		84F57E26200C4E2B006A25B8 /* StartPageVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = StartPageVC.m; sourceTree = "<group>"; };
+		84F57E27200C4E2C006A25B8 /* VideoVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VideoVC.h; sourceTree = "<group>"; };
+		84F57E28200C4E2C006A25B8 /* ImageVC.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ImageVC.m; sourceTree = "<group>"; };
+		84F57E29200C4E2C006A25B8 /* StartPageVC.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StartPageVC.h; sourceTree = "<group>"; };
 		8F2A5E2C5ABC8311E235E953 /* libPods-VideoDemo.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-VideoDemo.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BE06C37E41019F8D349D6969 /* Pods-VideoDemo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VideoDemo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-VideoDemo/Pods-VideoDemo.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -87,8 +95,13 @@
 				84BF85E91DBC841B00B4094F /* Assets */,
 				840D36A31DB7A46300EBC903 /* AppDelegate.h */,
 				840D36A41DB7A46300EBC903 /* AppDelegate.m */,
-				840D36A61DB7A46300EBC903 /* ViewController.h */,
-				840D36A71DB7A46300EBC903 /* ViewController.m */,
+				84F57E25200C4E2B006A25B8 /* ImageVC.h */,
+				84F57E28200C4E2C006A25B8 /* ImageVC.m */,
+				84F57E29200C4E2C006A25B8 /* StartPageVC.h */,
+				84F57E26200C4E2B006A25B8 /* StartPageVC.m */,
+				84F57E24200C4E2B006A25B8 /* StartPageVC.xib */,
+				84F57E27200C4E2C006A25B8 /* VideoVC.h */,
+				84F57E23200C4E2B006A25B8 /* VideoVC.m */,
 				840D36B91DB7AF8800EBC903 /* Models */,
 				84D7C0891DB9022A00548F79 /* View */,
 				840D36AC1DB7A46300EBC903 /* Assets.xcassets */,
@@ -207,6 +220,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84F57E2B200C4E2C006A25B8 /* StartPageVC.xib in Resources */,
 				84BF85EC1DBC842A00B4094F /* bg.wav in Resources */,
 				84BF85ED1DBC842A00B4094F /* bird.gif in Resources */,
 				840D36B01DB7A46300EBC903 /* LaunchScreen.storyboard in Resources */,
@@ -269,10 +283,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				840D36A81DB7A46300EBC903 /* ViewController.m in Sources */,
 				840D36BC1DB7AFA900EBC903 /* XLVideoRecorder.m in Sources */,
 				84D7C08C1DB9025D00548F79 /* XLTipsView.m in Sources */,
 				84D7C0881DB8F44700548F79 /* XLVideoEidt.m in Sources */,
+				84F57E2C200C4E2C006A25B8 /* StartPageVC.m in Sources */,
+				84F57E2A200C4E2C006A25B8 /* VideoVC.m in Sources */,
+				84F57E2D200C4E2C006A25B8 /* ImageVC.m in Sources */,
 				840D36A51DB7A46300EBC903 /* AppDelegate.m in Sources */,
 				840D36A21DB7A46300EBC903 /* main.m in Sources */,
 			);

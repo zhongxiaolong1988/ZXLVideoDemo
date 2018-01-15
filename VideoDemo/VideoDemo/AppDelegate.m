@@ -7,7 +7,7 @@
 //
 
 #import "AppDelegate.h"
-#import "ViewController.h"
+#import "StartPageVC.h"
 
 @interface AppDelegate ()
 
@@ -19,7 +19,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
 
-    ViewController *vc = [[ViewController alloc] init];
+    StartPageVC *vc = [[StartPageVC alloc] initWithNibName:@"StartPageVC" bundle:nil];
     UINavigationController *nav = [[UINavigationController alloc] initWithRootViewController:vc];
 
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
