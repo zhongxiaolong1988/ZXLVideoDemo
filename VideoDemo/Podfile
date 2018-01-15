@@ -8,5 +8,6 @@ target 'VideoDemo' do
   # Pods for VideoDemo
 
   pod 'SVProgressHUD'
+  pod 'OpenCV', '~> 3.0.0'
 
 end

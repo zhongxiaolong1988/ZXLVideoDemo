@@ -8,6 +8,7 @@
 
 #import "StartPageVC.h"
 #import "VideoVC.h"
+#import "ImageVC.h"
 
 @interface StartPageVC ()
 
@@ -27,7 +28,9 @@
 
 - (IBAction)imageBtnPressed:(id)sender
 {
+    ImageVC *imageVC = [[ImageVC alloc] init];
 
+    [self.navigationController pushViewController:imageVC animated:YES];
 }
 
 - (IBAction)videoBtnPressed:(id)sender
