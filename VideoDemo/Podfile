@@ -9,5 +9,6 @@ target 'VideoDemo' do
 
   pod 'SVProgressHUD'
   pod 'OpenCV', '~> 3.0.0'
+  pod 'Masonry'
 
 end
