@@ -48,4 +48,12 @@
  */
 - (UIImage *)findContoursImage:(UIImage *)orgImage;
 
+
+/**
+ 滤镜
+
+ @param orgImage 原始图
+ @return 效果图
+ */
+- (UIImage *)filterImage:(UIImage *)orgImage;
 @end

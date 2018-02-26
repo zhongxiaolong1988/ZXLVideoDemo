@@ -90,7 +90,7 @@
     }
 
     //1.灰度图
-//    UIImage *retImage =  [[XLImageFilter shared] imageToGray:image];
+    UIImage *retImage =  [[XLImageFilter shared] imageToGray:image];
 
     //2.双重曝光
 //    NSString *path = [[NSBundle mainBundle] pathForResource:@"double" ofType:@"jpg"];
@@ -102,7 +102,10 @@
 //    UIImage *retImage = [[XLImageFilter shared] gaussImage:image];
 
     //4.获取图像轮廓
-    UIImage *retImage = [[XLImageFilter shared] findContoursImage:image];
+//    UIImage *retImage = [[XLImageFilter shared] findContoursImage:image];
+
+    //5.滤镜
+//    UIImage *retImage = [[XLImageFilter shared] filterImage:image];
 
     self.imageView.image = retImage;
 }

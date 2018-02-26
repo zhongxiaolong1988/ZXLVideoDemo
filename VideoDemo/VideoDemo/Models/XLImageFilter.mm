@@ -10,6 +10,7 @@
 #import <opencv2/opencv.hpp>
 #import "UIImage+Utility.h"
 #import <CoreImage/CoreImage.h>
+#import <GPUImage/GPUImage.h>
 
 @implementation XLImageFilter
 
@@ -231,6 +232,25 @@
     CGImageRelease(cgImage);
     CGDataProviderRelease(provider);
     CGColorSpaceRelease(colorSpace);
+
+    return retImage;
+}
+
+- (UIImage *)filterImage:(UIImage *)orgImage
+{
+//    GPUImageBrightnessFilter *filter = [[GPUImageBrightnessFilter alloc] init];
+//    filter.brightness = 0.5;
+//    GPUImageGlassSphereFilter *filter = [[GPUImageGlassSphereFilter alloc] init];
+
+    GPUImageSketchFilter *filter = [[GPUImageSketchFilter alloc] init];
+
+    [filter forceProcessingAtSize:orgImage.size];
+    GPUImagePicture *pic = [[GPUImagePicture alloc] initWithImage:orgImage];
+
+    [pic addTarget:filter];
+    [pic processImage];
+    [filter useNextFrameForImageCapture];
+    UIImage *retImage = [filter imageFromCurrentFramebuffer];
 
     return retImage;
 }
