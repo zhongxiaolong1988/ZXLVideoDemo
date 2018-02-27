@@ -40,10 +40,10 @@
     {
         for (int j = 0; j < iWidth; j++)
         {
-            if (pIndex[j * 4 + 0] > 180)
-            {
-                continue;
-            }
+//            if (pIndex[j * 4 + 0] > 200)
+//            {
+//                continue;
+//            }
 
             unsigned char value = (pIndex[j * 4 + 0] + pIndex[j * 4 + 1] + pIndex[j * 4 + 2]) / 3.0f;
             pIndex[j * 4 + 0] = value;
