@@ -56,18 +56,18 @@ typedef enum _XLAlertViewType
     [XLVideoRecorder shared].finishBlock = ^(NSURL *outputUrl, NSError *error){
 
 
-        if (weakSelf.mVideoTime < 10)
-        {
-            [weakSelf stopTimer];
-            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
-                                                                message:@"录制视频时长小于10秒，请重新录制."
-                                                               delegate:self
-                                                      cancelButtonTitle:@"好的"
-                                                      otherButtonTitles:nil];
-            alertView.tag = XLAlertViewTypeError;
-            [alertView show];
-            return;
-        }
+//        if (weakSelf.mVideoTime < 10)
+//        {
+//            [weakSelf stopTimer];
+//            UIAlertView *alertView = [[UIAlertView alloc] initWithTitle:nil
+//                                                                message:@"录制视频时长小于10秒，请重新录制."
+//                                                               delegate:self
+//                                                      cancelButtonTitle:@"好的"
+//                                                      otherButtonTitles:nil];
+//            alertView.tag = XLAlertViewTypeError;
+//            [alertView show];
+//            return;
+//        }
 
         [weakSelf stopTimer];
 
@@ -80,7 +80,7 @@ typedef enum _XLAlertViewType
                                                                delegate:self
                                                       cancelButtonTitle:@"取消"
                                                       otherButtonTitles:@"继续", nil];
-        nextAlertView.tag = XLAlertViewTypeCompress;
+        nextAlertView.tag = XLAlertViewTypeEdit;
         [nextAlertView show];
     };
 
@@ -385,7 +385,7 @@ typedef enum _XLAlertViewType
 
                 NSURL *mergeUrl = [NSURL fileURLWithPath:[self mergeVideoPath]];
 
-                [[XLVideoEidt shared] editVideo:tmpUrl
+                [[XLVideoEidt shared] editVideo:self.mOutputUrl
                                     gifVideoUrl:nil
                                       outputUrl:mergeUrl
                                   compalteBlock:^(NSURL *finishUrl) {

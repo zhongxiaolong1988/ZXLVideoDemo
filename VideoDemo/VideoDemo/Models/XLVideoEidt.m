@@ -97,7 +97,6 @@
         return;
     }
 
-
     AVMutableComposition *mainComposition = [[AVMutableComposition alloc] init];
     AVMutableCompositionTrack *videoTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeVideo
                                                                          preferredTrackID:kCMPersistentTrackID_Invalid];
@@ -110,26 +109,11 @@
     AVAsset *asset = [AVAsset assetWithURL:inputUrl];
     float videoSeconds = asset.duration.value * 1.0f / asset.duration.timescale;
 
-    if (videoSeconds < 10)
-    {
-        NSLog(@"视频长度小于10秒，无法截取");
-        return;
-    }
-
-    //2.从视频中随机截取10秒的片段
-    //获取起始时间
-    float startTime = arc4random() % ((long)videoSeconds - 10);
-    NSLog(@"随机起始位置为 = %f", startTime);
-    //视频插入位置
-    static const float kInsertTime = 10;
-    //截取视频长度
-    static const float kClipTime = 10;
-
     NSError *error = nil;
 
-    //插入从开始到第10秒的时间
+    //插入从开始到第N秒的时间
     CMTimeRange startRange = CMTimeRangeMake(CMTimeMakeWithSeconds(0, asset.duration.timescale),
-                                             CMTimeMakeWithSeconds(10, asset.duration.timescale));
+                                             CMTimeMakeWithSeconds(videoSeconds, asset.duration.timescale));
     [videoTrack insertTimeRange:startRange
                         ofTrack:[asset tracksWithMediaType:AVMediaTypeVideo].firstObject
                          atTime:duration
@@ -138,41 +122,9 @@
                         ofTrack:[asset tracksWithMediaType:AVMediaTypeAudio].firstObject
                          atTime:duration
                           error:&error];
+    NSLog(@"video size = %f, %f",videoTrack.naturalSize.width, videoTrack.naturalSize.height);
 
-
-    //将截取的10秒片段循环插入3次
-    for (int i = 0; i < 3; i++)
-    {
-        CMTimeRange clipRange = CMTimeRangeMake(CMTimeMakeWithSeconds(startTime, asset.duration.timescale),
-                                                CMTimeMakeWithSeconds(kClipTime, asset.duration.timescale));
-        CMTime insertTime = CMTimeMakeWithSeconds(kInsertTime + i * kClipTime, asset.duration.timescale);
-
-        [videoTrack insertTimeRange:clipRange
-                            ofTrack:[asset tracksWithMediaType:AVMediaTypeVideo].firstObject
-                             atTime:insertTime
-                              error:&error];
-        [audioTrack insertTimeRange:clipRange
-                            ofTrack:[asset tracksWithMediaType:AVMediaTypeAudio].firstObject
-                             atTime:insertTime
-                              error:&error];
-    }
-
-    //再将之后的视频插入到截取的视频之后
-    CMTimeRange endRange = CMTimeRangeMake(CMTimeMakeWithSeconds(kInsertTime, asset.duration.timescale),
-                                           CMTimeMakeWithSeconds(videoSeconds - kInsertTime, asset.duration.timescale));
-
-    CMTime endTime = CMTimeMakeWithSeconds(kInsertTime + 3 * kClipTime, asset.duration.timescale);
-
-    [videoTrack insertTimeRange:endRange
-                        ofTrack:[asset tracksWithMediaType:AVMediaTypeVideo].firstObject
-                         atTime:endTime
-                          error:&error];
-    [audioTrack insertTimeRange:endRange
-                        ofTrack:[asset tracksWithMediaType:AVMediaTypeAudio].firstObject
-                         atTime:endTime
-                          error:&error];
-
-    //在第10秒的位置插入默认音乐
+    //在第0秒的位置插入默认音乐
     AVMutableCompositionTrack *newAudioTrack = [mainComposition addMutableTrackWithMediaType:AVMediaTypeAudio preferredTrackID:kCMPersistentTrackID_Invalid];
 
 
@@ -181,7 +133,7 @@
 
     [newAudioTrack insertTimeRange:CMTimeRangeMake(kCMTimeZero, defaultAudioAsset.duration)
                         ofTrack:[defaultAudioAsset tracksWithMediaType:AVMediaTypeAudio].firstObject
-                         atTime:CMTimeMakeWithSeconds(kInsertTime, asset.duration.timescale)
+                         atTime:CMTimeMakeWithSeconds(0, asset.duration.timescale)
                           error:&error];
 
     //设置插入的音频和原始音频混合
@@ -198,82 +150,32 @@
         return;
     }
 
-    //添加一个layer显示gif
-    //读取gif的每一帧和每一帧的持续时间
-    NSData *gifData = [NSData dataWithContentsOfFile:[[NSBundle mainBundle] pathForResource:@"bird"
-                                                                                     ofType:@"gif"]];
-    CGImageSourceRef src = CGImageSourceCreateWithData((CFDataRef)gifData, NULL);
-    size_t frameCount = CGImageSourceGetCount(src);
+    CATextLayer *overlayLayer = [CATextLayer layer];
+//    overlayLayer.backgroundColor = [UIColor colorWithRed:0.3 green:0 blue:0 alpha:0.3].CGColor;
+    CGFloat textWidth = 0.8;
+    CGFloat textHeight = 0.2;
+    overlayLayer.frame = CGRectMake((videoTrack.naturalSize.height * (1 - textWidth)) / 2,
+                                    0,
+                                    textWidth * videoTrack.naturalSize.height,
+                                    textHeight * videoTrack.naturalSize.width);
+    NSLog(@"video width height = %f, %f", videoTrack.naturalSize.width, videoTrack.naturalSize.height);
+    CGFloat contentScale = videoTrack.naturalSize.height / [UIScreen mainScreen].bounds.size.width;
+    NSLog(@"contentScale = %f", contentScale);
+    overlayLayer.contentsScale = contentScale;
+    NSAttributedString *testText = [[NSAttributedString alloc] initWithString:@"歌词视频歌词视频歌词视频" attributes:@{NSFontAttributeName:[UIFont boldSystemFontOfSize:24 * contentScale], NSForegroundColorAttributeName:[UIColor orangeColor]}];
+    overlayLayer.string = testText;
+    overlayLayer.alignmentMode = kCAAlignmentCenter;
 
-    NSDictionary *gifProperty = [NSDictionary dictionaryWithObject:@{@0:(NSString *)kCGImagePropertyGIFLoopCount}
-                                                            forKey:(NSString *)kCGImagePropertyGIFDictionary];
-    //取每张图片的图片属性,是一个字典
-    NSDictionary *dict = CFBridgingRelease(CGImageSourceCopyPropertiesAtIndex(src, 0, (CFDictionaryRef)gifProperty));
-    float width = [[dict valueForKey:(NSString *)kCGImagePropertyPixelWidth] floatValue];
-    float height = [[dict valueForKey:(NSString *)kCGImagePropertyPixelHeight] floatValue];
+    CAKeyframeAnimation *alphaAnimation = [CAKeyframeAnimation animationWithKeyPath:@"opacity"];
 
-    //每帧的时间数组
-    NSMutableArray *timeArray = [NSMutableArray new];
-    NSMutableArray *imageArr = [NSMutableArray new];
-    float gifTotalTime = 0;
-
-    for (int i = 0; i < frameCount; i++)
-    {
-        //添加每一帧时间
-        NSDictionary *tmp = [dict valueForKey:(NSString *)kCGImagePropertyGIFDictionary];
-        [timeArray addObject:[tmp valueForKey:(NSString *)kCGImagePropertyGIFDelayTime]];
-
-        gifTotalTime += [timeArray[i] floatValue];
-
-        //添加每一帧图像
-        CGImageRef gifImage = CGImageSourceCreateImageAtIndex(src, i, NULL);
-        [imageArr addObject:(__bridge id _Nonnull)(gifImage)];
-    }
-
-    CALayer *overlayLayer = [CALayer layer];
-
-    CGRect newGifFrame = CGRectMake(0, 0, width, height);
-
-    if (width > videoTrack.naturalSize.height)
-    {
-        newGifFrame = CGRectMake(0, 0, videoTrack.naturalSize.height, height * videoTrack.naturalSize.height / videoTrack.naturalSize.width);
-    }
-
-    overlayLayer.frame = CGRectMake((videoTrack.naturalSize.height - newGifFrame.size.width) / 2,
-                                    (videoTrack.naturalSize.width - newGifFrame.size.height) / 2,
-                                    newGifFrame.size.width,
-                                    newGifFrame.size.height);
-    overlayLayer.masksToBounds = YES;
-
-    //添加关键帧动画
-    CAKeyframeAnimation *animation = [CAKeyframeAnimation animationWithKeyPath:@"contents"];
-
-    //获取每帧动画起始时间在总时间的百分比
-    NSMutableArray *percentageArray = [NSMutableArray array];
-    CGFloat currentTime = 0.0;
-    for (int i = 0; i < timeArray.count; i++)
-    {
-        NSNumber *percentage = [NSNumber numberWithFloat:currentTime / gifTotalTime];
-        [percentageArray addObject:percentage];
-        currentTime = currentTime + [[timeArray objectAtIndex:i] floatValue];
-    }
-
-
-    [animation setKeyTimes:percentageArray];
-    //添加每帧动画
-    [animation setValues:imageArr];
-
-    //动画信息基本设置
-    [animation setTimingFunction:[CAMediaTimingFunction functionWithName:kCAMediaTimingFunctionLinear]];
-    [animation setDuration:gifTotalTime];
-    [animation setRepeatCount:1];
-    animation.beginTime = 3;
-
-    [overlayLayer addAnimation:animation forKey:@"gif"];
-
+    alphaAnimation.values = @[@(0.0),@(1), @(0.0)];
+    alphaAnimation.keyTimes = @[@(0), @(0.5), @(1)];
+    alphaAnimation.duration = 4.5;
+    alphaAnimation.repeatCount = 5;
+    alphaAnimation.beginTime = 0.01;
+    [overlayLayer addAnimation:alphaAnimation forKey:@"alpha"];
 
     CALayer *videoLayer = [CALayer layer];
-
     videoLayer.frame = CGRectMake(0, 0, videoTrack.naturalSize.height, videoTrack.naturalSize.width);
 
     CALayer *parentLayer = [CALayer layer];
@@ -310,8 +212,7 @@
 
     //保存合成的视频
     AVAssetExportSession *exporter = [[AVAssetExportSession alloc] initWithAsset:mainComposition
-                                                                      presetName:AVAssetExportPresetMediumQuality];
-
+                                                                      presetName:AVAssetExportPresetHighestQuality];
     exporter.outputURL = outputUrl;
     exporter.audioMix = audioMix;   //设置音频混合器
     exporter.outputFileType = AVFileTypeMPEG4;
@@ -337,6 +238,38 @@
                 break;
         }
     }];
+
+    //    //将截取的10秒片段循环插入3次
+    //    for (int i = 0; i < 3; i++)
+    //    {
+    //        CMTimeRange clipRange = CMTimeRangeMake(CMTimeMakeWithSeconds(startTime, asset.duration.timescale),
+    //                                                CMTimeMakeWithSeconds(kClipTime, asset.duration.timescale));
+    //        CMTime insertTime = CMTimeMakeWithSeconds(kInsertTime + i * kClipTime, asset.duration.timescale);
+    //
+    //        [videoTrack insertTimeRange:clipRange
+    //                            ofTrack:[asset tracksWithMediaType:AVMediaTypeVideo].firstObject
+    //                             atTime:insertTime
+    //                              error:&error];
+    //        [audioTrack insertTimeRange:clipRange
+    //                            ofTrack:[asset tracksWithMediaType:AVMediaTypeAudio].firstObject
+    //                             atTime:insertTime
+    //                              error:&error];
+    //    }
+
+        //再将之后的视频插入到截取的视频之后
+    //    CMTimeRange endRange = CMTimeRangeMake(CMTimeMakeWithSeconds(kInsertTime, asset.duration.timescale),
+    //                                           CMTimeMakeWithSeconds(videoSeconds - kInsertTime, asset.duration.timescale));
+    //
+    //    CMTime endTime = CMTimeMakeWithSeconds(kInsertTime + 3 * kClipTime, asset.duration.timescale);
+    //
+    //    [videoTrack insertTimeRange:endRange
+    //                        ofTrack:[asset tracksWithMediaType:AVMediaTypeVideo].firstObject
+    //                         atTime:endTime
+    //                          error:&error];
+    //    [audioTrack insertTimeRange:endRange
+    //                        ofTrack:[asset tracksWithMediaType:AVMediaTypeAudio].firstObject
+    //                         atTime:endTime
+    //                          error:&error];
 }
 
 - (void)rotateVideo:(NSURL *)inputUrl angle:(CGFloat)angle compalteBlock:(void (^)(NSURL *))complateBlock

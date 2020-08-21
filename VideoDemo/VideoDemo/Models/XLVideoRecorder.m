@@ -51,9 +51,9 @@
     self.mSession = [[AVCaptureSession alloc] init];
 
     //设置分辨率
-    if ([self.mSession canSetSessionPreset:AVCaptureSessionPreset1280x720])
+    if ([self.mSession canSetSessionPreset:AVCaptureSessionPresetHigh])
     {
-        [self.mSession setSessionPreset:AVCaptureSessionPreset1280x720];
+        [self.mSession setSessionPreset:AVCaptureSessionPresetHigh];
     }
 
     //添加视频输入设备，默认使用后置摄像头
